@@ -36,9 +36,7 @@ export default async function DashboardWaliMuridPage() {
         title="Dashboard Wali Murid"
         breadcrumbItems={breadcrumbItems}
       />
-      <p className="text-gray-600">
-        Monitoring performa akademik anak Anda
-      </p>
+      <p className="text-gray-600">Monitoring performa akademik anak Anda</p>
       <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-2xl mt-3 p-5 md:p-6 border border-blue-400 hover:border-blue-600 transition-all duration-300">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0 space-y-2">
@@ -66,8 +64,7 @@ export default async function DashboardWaliMuridPage() {
           </div>
           <div className="flex-shrink-0">
             <div className="relative">
-              <div className="absolute inset-0 bg-blue-400 rounded-full blur-md opacity-40 animate-pulse"></div>
-              <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-xl">
+              <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary flex items-center justify-center shadow-xl">
                 <span className="text-white font-extrabold text-xl md:text-2xl">
                   ZA
                 </span>
