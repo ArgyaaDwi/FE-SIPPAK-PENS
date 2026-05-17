@@ -2,6 +2,7 @@
 import { Upload, FileText, X, Eye } from "lucide-react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Breadcrumb from "@/components/fragment/Breadcumb";
 import {
   calculateMean,
@@ -19,6 +20,7 @@ type AkademikStats = {
 };
 
 export default function CreatePredictPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<"manual" | "csv">("manual");
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -73,54 +75,61 @@ export default function CreatePredictPage() {
     }));
   };
 
-  const handleSimpanData = () => {
+  const buildFinalPayload = () => {
+    const toNumber = (value: unknown) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
     const ipsArr = akademikData.map((d) => d.ips);
     const teoriArr = akademikData.map((d) => d.teori);
     const prakArr = akademikData.map((d) => d.prak);
     const hadirArr = akademikData.map((d) => d.kehadiran);
 
-    const finalPayload = {
+    return {
       ips_mean_awal: Number(calculateMean(ipsArr).toFixed(4)),
       ips_std_awal: Number(calculateStd(ipsArr).toFixed(4)),
+      ips_trend_awal: Number(calculateTrend(ipsArr).toFixed(4)),
 
       teori_mean_awal: Number(calculateMean(teoriArr).toFixed(4)),
       teori_std_awal: Number(calculateStd(teoriArr).toFixed(4)),
+      teori_trend_awal: Number(calculateTrend(teoriArr).toFixed(4)),
 
       prak_mean_awal: Number(calculateMean(prakArr).toFixed(4)),
       prak_std_awal: Number(calculateStd(prakArr).toFixed(4)),
+      prak_trend_awal: Number(calculateTrend(prakArr).toFixed(4)),
 
       kehadiran_awal_mean: Number(calculateMean(hadirArr).toFixed(4)),
       kehadiran_awal_std: Number(calculateStd(hadirArr).toFixed(4)),
+      kehadiran_trend_awal: Number(calculateTrend(hadirArr).toFixed(4)),
 
       sks_target_mean_awal: calculatedLoad.sks_target_mean_awal,
+      sks_target_std_awal: calculatedLoad.sks_target_std_awal,
       prop_mk_tidak_lulus_awal: calculatedLoad.prop_mk_tidak_lulus_awal,
       prop_sks_tidak_lulus_awal: calculatedLoad.prop_sks_tidak_lulus_awal,
       count_sem_mk_tidak_lulus_awal:
         calculatedLoad.count_sem_mk_tidak_lulus_awal,
 
-      ukt_awal_status: formData.ukt_awal_status,
-      is_kipk: formData.is_kipk,
-      is_non_kipk: formData.is_non_kipk,
-      is_prestasi: formData.is_prestasi,
-      total_prestasi: formData.total_prestasi,
-      skor_total: formData.skor_total,
-      is_STR: formData.is_STR,
-      is_laki: formData.is_laki,
-      PENGHASILAN_AYAH: formData.PENGHASILAN_AYAH,
-      PENGHASILAN_IBU: formData.PENGHASILAN_IBU,
+      ukt_awal_status: toNumber(formData.ukt_awal_status),
+      is_kipk: toNumber(formData.is_kipk),
+      is_non_kipk: toNumber(formData.is_non_kipk),
+      is_prestasi: toNumber(formData.is_prestasi),
+      total_prestasi: toNumber(formData.total_prestasi),
+      skor_total: toNumber(formData.skor_total),
+      is_STR: toNumber(formData.is_STR),
+      is_laki: toNumber(formData.is_laki),
+      PENGHASILAN_AYAH: toNumber(formData.PENGHASILAN_AYAH),
+      PENGHASILAN_IBU: toNumber(formData.PENGHASILAN_IBU),
     };
+  };
 
-    const jsonString = JSON.stringify(finalPayload, null, 2);
-    const newWindow = window.open();
-    newWindow.document.write(`
-      <html>
-        <head><title>Preview Payload API</title></head>
-        <body style="background:#1e1e1e; color:#d4d4d4; padding: 20px; font-family: monospace;">
-          <h2>Payload Siap Kirim (FastAPI)</h2>
-          <pre>${jsonString}</pre>
-        </body>
-      </html>
-    `);
+  const handleSubmitPrediction = () => {
+    const finalPayload = buildFinalPayload();
+    sessionStorage.setItem(
+      "kadepPredictionPayload",
+      JSON.stringify(finalPayload),
+    );
+    router.push("/kadep/predict/result");
   };
 
   const toggleSection = (key: keyof typeof openSections) => {
@@ -1082,10 +1091,10 @@ export default function CreatePredictPage() {
           <div className="mt-8 flex justify-end">
             <button
               type="button"
-              onClick={handleSimpanData}
+              onClick={handleSubmitPrediction}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition"
             >
-              Simpan & Test Payload
+              Submit Prediksi
             </button>
           </div>
         </>

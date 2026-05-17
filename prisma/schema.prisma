@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/types/interfaces.ts"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  KADEP
+  KAPRODI
+  DOSEN_WALI
+  WALI_MURID
+}
+
+model User {
+  id      Int @id @default(autoincrement())
+  nama String
+  email     String   @unique
+  password  String
+  role      Role
+
+  departemenDipimpin Departemen? @relation("Kadep")
+  prodiDipimpin Prodi?      @relation("Kaprodi")
+  kelasWali Kelas[] @relation("DosenWaliKelas")
+  anak          Mahasiswa[] @relation("WaliMuridMahasiswa")
+
+  prediksiDibuat Prediksi[]
+
+  created_at DateTime @default(now())
+  deleted Boolean @default(false)
+  @@map("users")
+}
+
+model Departemen {
+  id        Int      @id @default(autoincrement())
+  nama      String
+
+  kadep_id  Int?  @unique
+  kadep     User?    @relation("Kadep", fields: [kadep_id], references: [id])
+
+  prodi     Prodi[]
+
+  created_at DateTime @default(now())
+  deleted Boolean @default(false)
+  @@map("departemen")
+}
+
+model Prodi {
+  id           Int        @id @default(autoincrement())
+  nama         String
+
+  departemen_id Int
+  departemen   Departemen @relation(fields: [departemen_id], references: [id])
+
+  kaprodi_id    Int?    @unique
+  kaprodi      User?      @relation("Kaprodi", fields: [kaprodi_id], references: [id])
+
+  kelas        Kelas[]
+
+  created_at DateTime @default(now())
+  deleted Boolean @default(false)
+  @@map("prodi")
+}
+
+model Kelas {
+  id          Int         @id @default(autoincrement())
+  nama        String
+  angkatan    Int
+
+  prodi_id     Int
+  prodi       Prodi       @relation(fields: [prodi_id], references: [id])
+
+  dosen_wali_id Int?
+  dosen_wali   User?       @relation("DosenWaliKelas", fields: [dosen_wali_id], references: [id])
+
+  mahasiswa   Mahasiswa[]
+
+  created_at DateTime @default(now())
+  deleted Boolean @default(false)
+  @@map("kelas")
+}
+
+model Mahasiswa {
+  id          String   @id
+  nama        String
+  angkatan    Int
+
+  kelas_id     Int
+  kelas       Kelas    @relation(fields: [kelas_id], references: [id])
+
+  wali_id Int?
+  wali_murid   User?    @relation("WaliMuridMahasiswa", fields: [wali_id], references: [id])
+
+  prediksi    Prediksi[]
+
+  created_at DateTime @default(now())
+  deleted Boolean @default(false)
+  @@map("mahasiswa")
+}
+
+model Prediksi {
+  id              String   @id @default(cuid())
+
+  mahasiswa_id     String
+  mahasiswa       Mahasiswa @relation(fields: [mahasiswa_id], references: [id])
+
+  created_by    Int
+  created_by_user      User      @relation(fields: [created_by], references: [id])
+
+  payload_input    Json
+
+  output   String
+  prob_rendah      Float
+  prob_sedang      Float
+  prob_tinggi      Float
+
+  createdAt       DateTime @default(now())
+  deleted Boolean @default(false)
+  @@map("prediksi")
+}

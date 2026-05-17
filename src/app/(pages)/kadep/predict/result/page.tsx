@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -27,7 +28,96 @@ import {
 } from "@/data/resultDummy/stackingMetrics";
 import { TrendingUp } from "lucide-react";
 import Breadcrumb from "@/components/fragment/Breadcumb";
+
+type PredictApiResponse = {
+  prediksi: string;
+  probabilitas: {
+    rendah: number;
+    sedang: number;
+    tinggi: number;
+  };
+};
+
+type PredictApiError = {
+  message?: string;
+  detail?: string;
+};
+
 export default function PredictionResults() {
+  const [predictionResult, setPredictionResult] =
+    useState<PredictApiResponse | null>(null);
+  const [isLoadingPrediction, setIsLoadingPrediction] = useState(true);
+  const [predictionError, setPredictionError] = useState("");
+
+  useEffect(() => {
+    const fetchPredictionResult = async () => {
+      try {
+        const rawPayload = sessionStorage.getItem("kadepPredictionPayload");
+
+        if (!rawPayload) {
+          setPredictionError(
+            "Payload prediksi tidak ditemukan. Silakan submit ulang dari halaman input.",
+          );
+          return;
+        }
+
+        const payload = JSON.parse(rawPayload);
+        const response = await fetch("/api/predict", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorBody = (await response
+            .json()
+            .catch(() => null)) as PredictApiError | null;
+          const errorMessage = errorBody?.detail
+            ? `${errorBody.message ?? "Gagal memproses prediksi"}. ${errorBody.detail}`
+            : `${errorBody?.message ?? "Gagal memproses prediksi"} (HTTP ${response.status}).`;
+
+          throw new Error(errorMessage);
+        }
+
+        const data = (await response.json()) as PredictApiResponse;
+        setPredictionResult(data);
+      } catch (error) {
+        if (error instanceof TypeError) {
+          setPredictionError(
+            "Gagal menghubungi server prediksi. Pastikan backend berjalan di http://127.0.0.1:8000.",
+          );
+          return;
+        }
+
+        setPredictionError(
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat mengambil hasil prediksi.",
+        );
+      } finally {
+        setIsLoadingPrediction(false);
+      }
+    };
+
+    fetchPredictionResult();
+  }, []);
+
+  const formatProbability = (value?: number) => {
+    if (typeof value !== "number") {
+      return "-";
+    }
+    return value.toFixed(5);
+  };
+
+  const formatChartTooltipValue = (value: number | string | undefined) => {
+    if (typeof value === "number") {
+      return value.toFixed(2);
+    }
+    return "-";
+  };
+
   const breadcrumbItems = [
     {
       name: "Dashboard",
@@ -51,12 +141,19 @@ export default function PredictionResults() {
       <div className="flex justify-center my-3 sm:my-4 px-0">
         <Card className="w-full border-2 border-blue-500 bg-blue-50 shadow-sm">
           <CardHeader className="text-center px-3 py-3 sm:px-6 sm:py-6">
-            <CardTitle className="text-base sm:text-xl md:text-2xl text-sky-700 font-bold break-words">
+            <CardTitle className="text-base sm:text-xl md:text-2xl text-sky-700 font-bold wrap-break-word">
               Hasil Prediksi - Argya Dwi
             </CardTitle>
             <CardDescription className="text-base sm:text-lg text-gray-600 mt-1">
-              Kategori IPK: Sedang
+              {isLoadingPrediction
+                ? "Memproses prediksi..."
+                : `Kategori IPK: ${predictionResult?.prediksi ?? "-"}`}
             </CardDescription>
+            {!!predictionError && (
+              <CardDescription className="text-sm text-red-600 mt-1">
+                {predictionError}
+              </CardDescription>
+            )}
           </CardHeader>
           <CardContent className="px-3 sm:px-6 pb-4 sm:pb-6">
             <div className="space-y-4 sm:space-y-6">
@@ -68,7 +165,11 @@ export default function PredictionResults() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 w-full">
                   <div className="text-center p-3 sm:p-4 bg-blue-100 border border-blue-200 rounded-lg">
                     <div className="text-lg sm:text-2xl font-semibold text-primary">
-                      0.30105
+                      {isLoadingPrediction
+                        ? "..."
+                        : formatProbability(
+                            predictionResult?.probabilitas.rendah,
+                          )}
                     </div>
                     <div className="text-xs sm:text-sm mt-1 text-black">
                       Rendah
@@ -76,7 +177,11 @@ export default function PredictionResults() {
                   </div>
                   <div className="text-center p-3 sm:p-4 bg-blue-100 border border-blue-200 rounded-lg">
                     <div className="text-lg sm:text-2xl font-semibold text-primary">
-                      0.66858
+                      {isLoadingPrediction
+                        ? "..."
+                        : formatProbability(
+                            predictionResult?.probabilitas.sedang,
+                          )}
                     </div>
                     <div className="text-xs sm:text-sm mt-1 text-black">
                       Sedang
@@ -84,7 +189,11 @@ export default function PredictionResults() {
                   </div>
                   <div className="text-center p-3 sm:p-4 bg-blue-100 border border-blue-200 rounded-lg">
                     <div className="text-lg sm:text-2xl font-semibold text-primary">
-                      0.03037
+                      {isLoadingPrediction
+                        ? "..."
+                        : formatProbability(
+                            predictionResult?.probabilitas.tinggi,
+                          )}
                     </div>
                     <div className="text-xs sm:text-sm mt-1 text-black">
                       Tinggi
@@ -181,7 +290,7 @@ export default function PredictionResults() {
                     height={80}
                   />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(value) => value.toFixed(2)} />
+                  <Tooltip formatter={formatChartTooltipValue} />
                   <Legend wrapperStyle={{ fontSize: "12px" }} />
                   <Line
                     type="monotone"
@@ -227,7 +336,7 @@ export default function PredictionResults() {
                     height={80}
                   />
                   <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(value) => value.toFixed(2)} />
+                  <Tooltip formatter={formatChartTooltipValue} />
                   <Bar
                     dataKey="f1"
                     fill="hsl(var(--chart-2))"
