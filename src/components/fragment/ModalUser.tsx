@@ -12,8 +12,20 @@ interface ModalUserProps {
 }
 const ModalUser = ({ isOpen, onClose, user }: ModalUserProps) => {
   const handleLogout = async () => {
-    console.log("logout");
+    try {
+      const response = await fetch("/api/v1/auth/logout", {
+        method: "POST",
+      });
+      if (response.ok) {
+        window.location.href = "/login";
+      } else {
+        console.error("Logout gagal");
+      }
+    } catch (error) {
+      console.error("Terjadi kesalahan saat logout:", error);
+    }
   };
+
   if (!isOpen) return null;
   return (
     <>

@@ -1,9 +1,8 @@
 "use server";
 import { cookies } from "next/headers";
 import { createSessionToken, verifySessionToken } from "./encrypt";
-// import { User } from "../../prisma/interfaces";
 import { SessionUser } from "@/types/sessionUser";
-// Get session cookie
+
 export async function getSession() {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("session");
@@ -36,7 +35,7 @@ export async function createSession(user: SessionUser) {
     // secure: process.env.NODE_ENV === "production",
     secure: false,
     // expires: expiresAt,
-    maxAge: 60 * 60 * 24, // ✅ 1 hari dalam detik
+    maxAge: 60 * 60 * 24, // 1 hari dalam detik
     sameSite: "lax",
     path: "/",
   });
@@ -65,7 +64,7 @@ export async function updateSession() {
     httpOnly: true,
     // secure: process.env.NODE_ENV === "production",
     secure: false,
-    maxAge: 60 * 60 * 24, // ✅ 1 hari dalam detik
+    maxAge: 60 * 60 * 24, // 1 hari dalam detik
     sameSite: "lax",
     path: "/",
   });

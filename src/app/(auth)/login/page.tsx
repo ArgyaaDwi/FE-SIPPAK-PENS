@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Input from "@/components/form/Input";
 import Image from "next/image";
+import { ROLE_REDIRECT } from "@/lib/auth/roles";
 import ErrorValidation from "@/components/form/ErrorValidation";
 import Link from "next/link";
 export default function LoginPage() {
@@ -16,7 +17,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const response = await fetch("/api/v1/login", {
+      const response = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -27,9 +28,8 @@ export default function LoginPage() {
       console.log(result);
 
       if (!response.ok) {
-        // Tampilkan pesan error dari server jika ada
         const serverError = result?.error || result?.message || "Gagal login";
-        console.error("❌ Server error:", serverError);
+        console.error("Server error:", serverError);
         setError(serverError);
         return;
         // throw new Error(result.error || "Failed to login");
@@ -40,15 +40,14 @@ export default function LoginPage() {
 
       console.log("Redirecting to:", userRole);
 
-      if (userRole === "ADMIN") {
-        // alert("Redirecting to /admin/dashboard");
-        router.push("/admin/dashboard");
-        // window.location.href = "/admin/dashboard";
-        // router.push("/admin/dashboard");
-      } else if (userRole === "DOSEN") {
-        router.push("/lecturer/dashboard");
-      } else if (userRole === "PENERBIT") {
-        router.push("/publisher/dashboard");
+      if (userRole === "KADEP") {
+        router.push("/kadep/dashboard");
+      } else if (userRole === "KAPRODI") {
+        router.push("/kaprodi/dashboard");
+      } else if (userRole === "DOSEN_WALI") {
+        router.push("/dosen-wali/dashboard");
+      } else if (userRole === "WALI_MURID") {
+        router.push("/wali-murid/dashboard");
       } else {
         throw new Error("Invalid role");
       }

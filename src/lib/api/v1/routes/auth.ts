@@ -84,7 +84,6 @@ auth.post("/logout", async (c) => {
 // ENDPOINT CEK SESI (/me)
 auth.get("/me", async (c) => {
   try {
-    // 1. Cari token di Cookie dulu (untuk Browser FE)
     let token = getCookie(c, "session");
 
     if (!token) {

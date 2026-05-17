@@ -41,7 +41,19 @@ export default function Sidebar({
   }, [mobileOpen, onMobileClose]);
 
   const handleLogout = async () => {
-    console.log("logout");
+    try {
+      const response = await fetch("/api/v1/auth/logout", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        window.location.href = "/login";
+      } else {
+        console.error("Logout gagal");
+      }
+    } catch (error) {
+      console.error("Terjadi kesalahan saat logout:", error);
+    }
   };
 
   return (
