@@ -9,7 +9,7 @@ const protectedRouteByRoles = [
   { path: /^\/wali-murid/, roles: ["wali_murid"] },
 ];
 
-const publicRoutes = ["/login", "/api/login"];
+const publicRoutes = ["/login", "/api/v1/auth/login", "/api/v1/auth/logout"];
 
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
@@ -55,14 +55,19 @@ export async function middleware(req: NextRequest) {
   const userRole = session.role.toString().toLowerCase();
 
   const matchedRoute = protectedRouteByRoles.find((route) =>
-    route.path.test(pathname)
+    route.path.test(pathname),
   );
 
   if (matchedRoute) {
     if (!matchedRoute.roles.includes(userRole)) {
-      console.log(`[Middleware] Akses ditolak: Role ${userRole} dilarang masuk ke ${pathname}`);
+      console.log(
+        `[Middleware] Akses ditolak: Role ${userRole} dilarang masuk ke ${pathname}`,
+      );
       return isApiRoute
-        ? NextResponse.json({ error: "Forbidden: Akses ditolak" }, { status: 403 })
+        ? NextResponse.json(
+            { error: "Forbidden: Akses ditolak" },
+            { status: 403 },
+          )
         : NextResponse.redirect(new URL("/unauthorized", req.url));
     }
   }

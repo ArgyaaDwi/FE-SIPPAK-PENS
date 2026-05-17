@@ -84,23 +84,6 @@ auth.post("/logout", async (c) => {
 // ENDPOINT CEK SESI (/me)
 auth.get("/me", async (c) => {
   try {
-    const session = await getSession();
-
-    if (!session) {
-      return c.json(
-        { success: false, error: "Unauthorized / Belum Login" },
-        401,
-      );
-    }
-
-    return c.json({ success: true, payload: session }, 200);
-  } catch (error) {
-    return c.json({ success: false, error: "Gagal memvalidasi sesi" }, 500);
-  }
-});
-
-auth.get("/me", async (c) => {
-  try {
     // 1. Cari token di Cookie dulu (untuk Browser FE)
     let token = getCookie(c, "session");
 
