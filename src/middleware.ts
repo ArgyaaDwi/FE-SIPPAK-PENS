@@ -17,6 +17,8 @@ export async function middleware(req: NextRequest) {
 
   if (
     publicRoutes.includes(pathname) ||
+    pathname.startsWith("/demo") ||
+    pathname.endsWith("/api/v1/predict/demo") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/assets/") ||
     pathname.startsWith("/publication") ||

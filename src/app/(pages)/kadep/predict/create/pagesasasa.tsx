@@ -1,8 +1,8 @@
 "use client";
-import { Upload, FileText, X, Eye, ChevronDown, ChevronUp } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { Upload, FileText, X, Eye } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Select from "react-select";
 import Breadcrumb from "@/components/fragment/Breadcumb";
 import {
   calculateMean,
@@ -10,12 +10,6 @@ import {
   calculateTrend,
 } from "@/utils/mathHelper";
 import HeaderSubForm from "@/components/form/HeaderSubForm";
-
-// 🔹 Tambahkan Props isDemo dan role
-interface PredictFeatureProps {
-  isDemo?: boolean;
-  role?: "KADEP" | "KAPRODI" | "DOSEN_WALI" | "WALI_MURID" | "DEMO";
-}
 
 type AkademikField = "ips" | "teori" | "prak" | "kehadiran";
 
@@ -25,45 +19,12 @@ type AkademikStats = {
   trend: number;
 };
 
-export default function PredictFeature({
-  isDemo = false,
-  role = "DEMO",
-}: PredictFeatureProps) {
+export default function CreatePredictPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"manual" | "csv">("manual");
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // 🔹 STATE BARU: Untuk Data Mahasiswa
-  const [mahasiswaId, setMahasiswaId] = useState("");
-  const [listMahasiswa, setListMahasiswa] = useState<
-    { id: string; nama: string }[]
-  >([]);
-  const [isLoadingMahasiswa, setIsLoadingMahasiswa] = useState(false);
-
-  // 🔹 USE EFFECT: Fetch data mahasiswa SAAT BUKAN DEMO
-  useEffect(() => {
-    if (!isDemo) {
-      async function fetchMahasiswa() {
-        setIsLoadingMahasiswa(true);
-        try {
-          // Sesuaikan endpoint ini dengan rute Hono-mu nanti
-          const res = await fetch("/api/v1/mahasiswa");
-          const json = await res.json();
-          if (json.success) {
-            setListMahasiswa(json.data);
-          }
-        } catch (error) {
-          console.error("Gagal mengambil data mahasiswa:", error);
-        } finally {
-          setIsLoadingMahasiswa(false);
-        }
-      }
-      fetchMahasiswa();
-    }
-  }, [isDemo]);
 
   const [openSections, setOpenSections] = useState({
     akademik: true,
@@ -162,6 +123,15 @@ export default function PredictFeature({
     };
   };
 
+  const handleSubmitPrediction = () => {
+    const finalPayload = buildFinalPayload();
+    sessionStorage.setItem(
+      "kadepPredictionPayload",
+      JSON.stringify(finalPayload),
+    );
+    router.push("/kadep/predict/result");
+  };
+
   const toggleSection = (key: keyof typeof openSections) => {
     setOpenSections((prev) => ({
       ...prev,
@@ -194,7 +164,7 @@ export default function PredictFeature({
     }));
   };
 
-  const handleFileChange = (e: any) => {
+  const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -235,12 +205,10 @@ export default function PredictFeature({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
-
   const breadcrumbItems = [
     { name: "Dashboard", url: "/dashboard" },
     { name: "Input Prediksi", url: "/predict" },
   ];
-
   const [semesterData, setSemesterData] = useState([
     {
       semester: 1,
@@ -280,9 +248,10 @@ export default function PredictFeature({
     count_sem_mk_tidak_lulus_awal: 0,
   });
 
-  const handleDataChange = (index: number, field: string, value: string) => {
+  // Handler update data per semester
+  const handleDataChange = (index, field, value) => {
     const newData = [...semesterData];
-    newData[index][field as keyof (typeof newData)[0]] = parseFloat(value) || 0;
+    newData[index][field] = parseFloat(value) || 0;
     setSemesterData(newData);
   };
 
@@ -321,146 +290,13 @@ export default function PredictFeature({
       count_sem_mk_tidak_lulus_awal: countSemBermasalah,
     });
   };
-
-  // 🔹 FUNGSI SUBMIT PREDIKSI UTAMA
-  // 🔹 FUNGSI SUBMIT PREDIKSI UTAMA
-  const handleSubmitPrediction = async () => {
-    try {
-      setIsLoading(true);
-
-      if (!isDemo && !mahasiswaId) {
-        alert("Pilih Mahasiswa terlebih dahulu untuk menyimpan ke database!");
-        return;
-      }
-
-      const finalPayload = buildFinalPayload();
-
-      // ==========================================
-      // 1. FETCH KE FASTAPI (ML MODEL)
-      // ==========================================
-      const fastApiRes = await fetch("http://127.0.0.1:8000/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalPayload),
-      });
-
-      if (!fastApiRes.ok)
-        throw new Error("Gagal mengambil prediksi dari server ML");
-
-      const mlResult = await fastApiRes.json();
-
-      // ==========================================
-      // 2. SIMPAN KE DATABASE (Hanya jika BUKAN Demo)
-      // ==========================================
-      if (!isDemo) {
-        const dbRes = await fetch("/api/v1/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mahasiswa_id: mahasiswaId,
-            payload_input: finalPayload,
-            output: mlResult.output,
-            prob_rendah: mlResult.prob_rendah,
-            prob_sedang: mlResult.prob_sedang,
-            prob_tinggi: mlResult.prob_tinggi,
-          }),
-        });
-
-        if (!dbRes.ok) throw new Error("Gagal menyimpan prediksi ke database");
-      }
-
-      // ==========================================
-      // 3. REDIRECT KE HALAMAN RESULT
-      // ==========================================
-      sessionStorage.setItem(
-        "predictionResult",
-        JSON.stringify({ payload: finalPayload, result: mlResult }),
-      );
-
-      const redirectUrl = isDemo
-        ? "/demo/result"
-        : `/${role.toLowerCase().replace("_", "-")}/predict/result`;
-
-      router.push(redirectUrl);
-    } catch (error) {
-      console.error(error);
-      alert("Terjadi kesalahan saat memproses prediksi.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const mahasiswaOptions = listMahasiswa.map((mhs) => ({
-    value: mhs.id,
-    label: `${mhs.id} - ${mhs.nama}`,
-  }));
-
   return (
     <div>
       <Breadcrumb
-        title={isDemo ? "Demo Prediksi IPK" : "Halaman Prediksi Mahasiswa"}
+        title="Halaman Prediksi Mahasiswa"
         breadcrumbItems={breadcrumbItems}
       />
-
-      {/* 🔹 RENDER DROPDOWN MAHASISWA JIKA BUKAN DEMO */}
-      {!isDemo && (
-        <div className="my-5 p-5 bg-blue-50 rounded-lg shadow-sm border border-blue-200">
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
-            Pilih Mahasiswa yang Akan Diprediksi{" "}
-            <span className="text-red-500">*</span>
-          </label>
-
-          {isLoadingMahasiswa ? (
-            <p className="text-sm text-gray-500 animate-pulse">
-              Memuat daftar mahasiswa...
-            </p>
-          ) : (
-            <Select
-              instanceId="mahasiswa-select"
-              options={mahasiswaOptions}
-              value={
-                mahasiswaOptions.find((opt) => opt.value === mahasiswaId) ||
-                null
-              }
-              onChange={(selected) => setMahasiswaId(selected?.value ?? "")}
-              placeholder="Cari NRP atau Nama Mahasiswa..."
-              isClearable
-              isSearchable
-              noOptionsMessage={() => "Mahasiswa tidak ditemukan"}
-              className="w-full"
-              classNamePrefix="react-select"
-              styles={{
-                control: (base) => ({
-                  ...base,
-                  borderColor: "#d1d5db",
-                  borderRadius: "0.375rem",
-                  padding: "2px",
-                  fontSize: "0.875rem",
-                  "&:hover": { borderColor: "#3b82f6" },
-                }),
-                option: (base, state) => ({
-                  ...base,
-                  fontSize: "0.875rem",
-                  backgroundColor: state.isSelected
-                    ? "#3b82f6"
-                    : state.isFocused
-                      ? "#eff6ff"
-                      : "white",
-                  color: state.isSelected ? "white" : "#111827",
-                }),
-              }}
-            />
-          )}
-
-          <p className="text-xs text-gray-500 mt-2">
-            Hasil prediksi akan masuk ke data mahasiswa ini di database. 1
-            Mahasiswa bisa memiliki banyak prediksi (history), tapi pastikan
-            memilih mahasiswa yang benar untuk hasil yang akurat!
-          </p>
-        </div>
-      )}
-
-      <p className="text-gray-600 mb-4">
+      <p className="text-gray-600">
         Masukkan data mahasiswa secara manual atau upload file .CSV
       </p>
 
@@ -491,7 +327,7 @@ export default function PredictFeature({
         </div>
       </div>
 
-      {/* 🔹 Card Upload CSV */}
+      {/* 🔹 Card Upload CSV (muncul hanya kalau pilih CSV) */}
       {mode === "csv" && (
         <>
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg mt-3 p-4 md:p-6 border-l-4 border-blue-500">
@@ -513,8 +349,21 @@ export default function PredictFeature({
                 </h3>
                 <p className="text-gray-600 text-sm md:text-base">
                   Lihat panduan lengkap untuk format file CSV yang benar dan
-                  cara mengisi data dengan tepat agar prediksi akurat.
+                  cara mengisi data dengan tepat agar prediksi akurat. Tersedia
+                  template CSV yang bisa diunduh untuk memudahkan Anda dalam
+                  mengisi data.
                 </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
+                <a
+                  href="https://wa.me/6281226513164?text=Halo%20Admin,%20saya%20butuh%20bantuan%20terkait%20penerbitan%20buku."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors duration-200 text-sm md:text-base"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Lihat dan Unduh Template CSV
+                </a>
               </div>
             </div>
           </div>
@@ -565,6 +414,9 @@ export default function PredictFeature({
                       <X size={20} />
                     </button>
                   </div>
+                  <p className="text-sm text-gray-500 mt-4 text-center">
+                    Klik atau drag file baru untuk mengganti
+                  </p>
                 </div>
               ) : (
                 <>
@@ -583,22 +435,18 @@ export default function PredictFeature({
             </div>
 
             {file && (
-              <button
-                onClick={handleSubmitPrediction}
-                disabled={isLoading}
-                className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition"
-              >
-                {isLoading ? "Memproses..." : "Submit File & Prediksi"}
+              <button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition">
+                Upload File
               </button>
             )}
           </div>
         </>
       )}
 
-      {/* 🔹 Form Manual */}
+      {/* 🔹 Form Manual (muncul hanya kalau pilih manual) */}
       {mode === "manual" && (
         <>
-          <div className="bg-white rounded-lg mt-3 shadow-sm">
+          <div className="bg-white rounded-lg mt-3  shadow-sm">
             <div className="flex justify-between items-center px-2 py-3 border-b">
               <HeaderSubForm title="Historis Akademik" />
               <button
@@ -614,9 +462,10 @@ export default function PredictFeature({
               </button>
             </div>
             <div
-              className={`transition-all duration-300 ${openSections.akademik ? "block" : "hidden"}`}
+              className={`transition-all duration-300 ${
+                openSections.akademik ? "block" : "hidden"
+              }`}
             >
-              {/* IPS */}
               <div className="p-6 border-b">
                 <h3 className="font-semibold text-gray-700 mb-4">
                   IP (Input Per Semester)
@@ -673,8 +522,7 @@ export default function PredictFeature({
                   </div>
                 </div>
               </div>
-
-              {/* Teori */}
+              {/* seputar nilai teori */}
               <div className="p-6 border-b">
                 <h3 className="font-semibold text-gray-700 mb-4">
                   Nilai Teori (Input Per Semester)
@@ -692,11 +540,13 @@ export default function PredictFeature({
                         onChange={(e) =>
                           handleAkademikChange(idx, "teori", e.target.value)
                         }
+                        placeholder="Contoh: 3.50"
                         className="w-full border rounded-md p-2 text-sm"
                       />
                     </div>
                   ))}
                 </div>
+
                 <button
                   type="button"
                   onClick={() => handleCalculateAkademik("teori")}
@@ -732,8 +582,7 @@ export default function PredictFeature({
                   </div>
                 </div>
               </div>
-
-              {/* Praktikum */}
+              {/* seputar nilai praktikum */}
               <div className="p-6">
                 <h3 className="font-semibold text-gray-700 mb-4">
                   Nilai Praktikum (Input Per Semester)
@@ -751,11 +600,13 @@ export default function PredictFeature({
                         onChange={(e) =>
                           handleAkademikChange(idx, "prak", e.target.value)
                         }
+                        placeholder="Contoh: 3.50"
                         className="w-full border rounded-md p-2 text-sm"
                       />
                     </div>
                   ))}
                 </div>
+
                 <button
                   type="button"
                   onClick={() => handleCalculateAkademik("prak")}
@@ -797,8 +648,6 @@ export default function PredictFeature({
               </div>
             </div>
           </div>
-
-          {/* SKS & Beban Studi */}
           <div className="bg-white rounded-lg mt-3 shadow-sm">
             <div className="flex justify-between items-center px-2 py-3 border-b">
               <HeaderSubForm title="Beban Studi" />
@@ -815,8 +664,14 @@ export default function PredictFeature({
               </button>
             </div>
             <div
-              className={`bg-white rounded-lg p-6 shadow-sm ${openSections.sks ? "block" : "hidden"}`}
+              className={`bg-white rounded-lg p-6 shadow-sm ${
+                openSections.sks ? "block" : "hidden"
+              }`}
             >
+              <h3 className="font-semibold text-gray-700 mb-4">
+                Input Data Beban Studi per Semester
+              </h3>
+              {/* Render baris input per semester */}
               {semesterData.map((data, idx) => (
                 <div
                   key={idx}
@@ -825,6 +680,7 @@ export default function PredictFeature({
                   <div className="sm:col-span-4 font-semibold text-sm text-blue-600">
                     Semester {idx + 1}
                   </div>
+
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">
                       SKS Target
@@ -879,6 +735,7 @@ export default function PredictFeature({
                   </div>
                 </div>
               ))}
+
               <button
                 type="button"
                 onClick={handleCalculateLoad}
@@ -886,6 +743,8 @@ export default function PredictFeature({
               >
                 Hitung Statistik SKS & Kelulusan
               </button>
+
+              {/* Preview Payload */}
               <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
                 <h4 className="text-sm font-semibold text-gray-700 mb-2">
                   Preview Payload:
@@ -931,9 +790,7 @@ export default function PredictFeature({
               </div>
             </div>
           </div>
-
-          {/* Kehadiran */}
-          <div className="bg-white rounded-lg mt-3 shadow-sm">
+          <div className="bg-white rounded-lg mt-3  shadow-sm">
             <div className="flex justify-between items-center px-2 py-3 border-b">
               <HeaderSubForm title="Kehadiran" />
               <button
@@ -947,15 +804,22 @@ export default function PredictFeature({
                   <ChevronDown size={18} />
                 )}
               </button>
-            </div>
+            </div>{" "}
+            {/* seputar ip */}
             <div
-              className={`bg-white rounded-lg p-6 shadow-sm ${openSections.kehadiran ? "block" : "hidden"}`}
+              className={`bg-white rounded-lg p-6 shadow-sm ${
+                openSections.kehadiran ? "block" : "hidden"
+              }`}
             >
+              {" "}
+              <h3 className="font-semibold text-gray-700 mb-4">
+                Kehadiran (Input Per Semester)
+              </h3>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4">
                 {akademikData.map((_, idx) => (
                   <div key={idx}>
                     <label className="block text-xs text-gray-500 mb-1">
-                      Kehadiran Sem {idx + 1}
+                      Kehadiran Semester {idx + 1}
                     </label>
                     <input
                       type="number"
@@ -964,6 +828,7 @@ export default function PredictFeature({
                       onChange={(e) =>
                         handleAkademikChange(idx, "kehadiran", e.target.value)
                       }
+                      placeholder="Contoh: 90"
                       className="w-full border rounded-md p-2 text-sm"
                     />
                   </div>
@@ -999,8 +864,6 @@ export default function PredictFeature({
               </div>
             </div>
           </div>
-
-          {/* Prestasi */}
           <div className="bg-white rounded-lg mt-3 shadow-sm">
             <div className="flex justify-between items-center px-2 py-3 border-b">
               <HeaderSubForm title="Prestasi" />
@@ -1015,10 +878,13 @@ export default function PredictFeature({
                   <ChevronDown size={18} />
                 )}
               </button>
-            </div>
+            </div>{" "}
             <div
-              className={`bg-white rounded-lg p-6 shadow-sm ${openSections.prestasi ? "block" : "hidden"}`}
+              className={`bg-white rounded-lg p-6 shadow-sm ${
+                openSections.prestasi ? "block" : "hidden"
+              }`}
             >
+              {" "}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
@@ -1035,24 +901,30 @@ export default function PredictFeature({
                     <option value="0">Tidak</option>
                   </select>
                 </div>
+
+                {/* Total Prestasi */}
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
                     Total Prestasi
                   </label>
                   <input
                     type="number"
+                    placeholder="Contoh: 3"
                     name="total_prestasi"
                     value={formData.total_prestasi}
                     onChange={handleFormChange}
                     className="w-full border rounded-md p-2 text-sm"
                   />
                 </div>
+
+                {/* Skor Prestasi */}
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
                     Skor Prestasi
                   </label>
                   <input
                     type="number"
+                    placeholder="Contoh: 85"
                     name="skor_total"
                     value={formData.skor_total}
                     onChange={handleFormChange}
@@ -1062,8 +934,6 @@ export default function PredictFeature({
               </div>
             </div>
           </div>
-
-          {/* Sosial Ekonomi */}
           <div className="bg-white rounded-lg mt-3 shadow-sm">
             <div className="flex justify-between items-center px-2 py-3 border-b">
               <HeaderSubForm title="Sosial Ekonomi" />
@@ -1080,8 +950,11 @@ export default function PredictFeature({
               </button>
             </div>
             <div
-              className={`bg-white rounded-lg p-6 shadow-sm ${openSections.sosial ? "block" : "hidden"}`}
+              className={`bg-white rounded-lg p-6 shadow-sm ${
+                openSections.sosial ? "block" : "hidden"
+              }`}
             >
+              {" "}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
@@ -1101,7 +974,7 @@ export default function PredictFeature({
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
-                    KIPK?
+                    Penerima Beasiswa KIPK?
                   </label>
                   <select
                     name="is_kipk"
@@ -1116,7 +989,7 @@ export default function PredictFeature({
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
-                    Non KIPK?
+                    Penerima Beasiswa Non KIPK?
                   </label>
                   <select
                     name="is_non_kipk"
@@ -1137,6 +1010,7 @@ export default function PredictFeature({
                   </label>
                   <input
                     type="number"
+                    placeholder="Contoh: 3"
                     name="PENGHASILAN_AYAH"
                     value={formData.PENGHASILAN_AYAH}
                     onChange={handleFormChange}
@@ -1149,6 +1023,7 @@ export default function PredictFeature({
                   </label>
                   <input
                     type="number"
+                    placeholder="Contoh: 85"
                     name="PENGHASILAN_IBU"
                     value={formData.PENGHASILAN_IBU}
                     onChange={handleFormChange}
@@ -1158,8 +1033,6 @@ export default function PredictFeature({
               </div>
             </div>
           </div>
-
-          {/* Demografis */}
           <div className="bg-white rounded-lg mt-3 shadow-sm">
             <div className="flex justify-between items-center px-2 py-3 border-b">
               <HeaderSubForm title="Data Demografis" />
@@ -1174,10 +1047,13 @@ export default function PredictFeature({
                   <ChevronDown size={18} />
                 )}
               </button>
-            </div>
+            </div>{" "}
             <div
-              className={`bg-white rounded-lg p-6 shadow-sm ${openSections.demografis ? "block" : "hidden"}`}
+              className={`bg-white rounded-lg p-6 shadow-sm ${
+                openSections.demografis ? "block" : "hidden"
+              }`}
             >
+              {" "}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">
@@ -1212,18 +1088,13 @@ export default function PredictFeature({
               </div>
             </div>
           </div>
-
-          {/* Tombol Submit */}
           <div className="mt-8 flex justify-end">
             <button
               type="button"
               onClick={handleSubmitPrediction}
-              disabled={isLoading}
-              className={`${
-                isLoading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-              } text-white font-bold py-3 px-8 rounded-lg shadow-md transition`}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition"
             >
-              {isLoading ? "Memproses..." : "Submit Prediksi"}
+              Submit Prediksi
             </button>
           </div>
         </>

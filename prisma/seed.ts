@@ -57,6 +57,28 @@ async function main() {
     },
   });
 
+  // ===== MAHASISWA =====
+  const dataMahasiswa = [
+    { id: "2042231001", nama: "Ian Ale" },
+    { id: "2042231002", nama: "Khanza Fadila" },
+    { id: "2042231003", nama: "Bayu Hadi" },
+    { id: "2042231004", nama: "Abid Farhan" },
+    { id: "2042231005", nama: "Aaron Pratama" },
+  ];
+
+  for (const mhs of dataMahasiswa) {
+    await prisma.mahasiswa.upsert({
+      where: { id: mhs.id },
+      update: {},
+      create: {
+        id: mhs.id,
+        nama: mhs.nama,
+        angkatan: 2022,
+        kelas_id: 1,
+      },
+    });
+  }
+
   console.log("Seeding selesai! 🚀 Berhasil membuat user:");
   console.log({
     kadep: kadep.email,
@@ -64,6 +86,7 @@ async function main() {
     dosenWali: dosenWali.email,
     waliMurid: waliMurid.email,
   });
+  console.log(`Mahasiswa: ${dataMahasiswa.length} data berhasil di-seed`);
 }
 
 main()
