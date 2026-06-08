@@ -32,7 +32,6 @@ export default function LoginPage() {
         console.error("Server error:", serverError);
         setError(serverError);
         return;
-        // throw new Error(result.error || "Failed to login");
       }
 
       console.log("Login successful:", result.data);
@@ -114,17 +113,6 @@ export default function LoginPage() {
             {loading ? "Loading..." : "Login"}
           </button>
         </form>
-        {/* <p className="text-black text-center text-base mt-6 font-normal">
-          Belum punya akun?{" "}
-          <a
-            href="https://wa.me/6281226513164?text=Halo%20Admin,%20saya%20butuh%20bantuan%20terkait%20pendaftaran."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
-            Hubungi Admin
-          </a>
-        </p> */}
       </div>
       <div className=" hidden md:flex w-1/2 justify-center items-center">
         <Image
