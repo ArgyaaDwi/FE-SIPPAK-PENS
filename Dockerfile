@@ -6,6 +6,19 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+FROM base AS prisma-tools
+WORKDIR /app
+
+ARG DATABASE_URL
+
+ENV DATABASE_URL=${DATABASE_URL}
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+
+CMD ["npx", "prisma", "migrate", "deploy"]
+
 FROM base AS builder
 WORKDIR /app
 
