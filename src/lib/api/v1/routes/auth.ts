@@ -47,7 +47,8 @@ auth.post("/login", async (c) => {
 
     setCookie(c, "session", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "Lax",
       path: "/",
       maxAge: 60 * 60 * 24, // 1 hari dalam detik
@@ -74,7 +75,8 @@ auth.post("/login", async (c) => {
 auth.post("/logout", async (c) => {
   deleteCookie(c, "session", {
     path: "/",
-    secure: process.env.NODE_ENV === "production",
+    // secure: process.env.NODE_ENV === "production",
+    secure: false,
     sameSite: "Lax",
   });
 
