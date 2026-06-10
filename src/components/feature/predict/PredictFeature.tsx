@@ -338,7 +338,7 @@ export default function PredictFeature({
       // ==========================================
       // 1. FETCH KE FASTAPI (ML MODEL)
       // ==========================================
-      const fastApiRes = await fetch("http://127.0.0.1:8000/predict", {
+      const fastApiRes = await fetch("http://43.157.228.152:8001/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(finalPayload),
