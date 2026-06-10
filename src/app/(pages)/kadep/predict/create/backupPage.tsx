@@ -1,4 +1,4 @@
-<div className="bg-white rounded-lg mt-3 py-2 shadow-sm">
+{/* <div className="bg-white rounded-lg mt-3 py-2 shadow-sm">
   <HeaderForm title="Form Prediksi" />
   <hr className="mb-3" />
   <div className="px-4">
@@ -233,4 +233,4 @@
     </form>
   </div>
 </div>;
-export default BackupPage;
+export default BackupPage; */}
