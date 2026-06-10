@@ -16,6 +16,7 @@ ENV DATABASE_URL=${DATABASE_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
+RUN npx prisma generate
 
 CMD ["npx", "prisma", "migrate", "deploy"]
 

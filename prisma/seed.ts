@@ -9,6 +9,13 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("password123", 10);
 
+  // Bersihkan data turunan dulu agar seed bisa dijalankan berulang kali.
+  await prisma.prediksi.deleteMany();
+  await prisma.mahasiswa.deleteMany();
+  await prisma.kelas.deleteMany();
+  await prisma.prodi.deleteMany();
+  await prisma.departemen.deleteMany();
+
   // User KADEP
   const kadep = await prisma.user.upsert({
     where: { email: "kadep@pens.ac.id" },
@@ -57,6 +64,36 @@ async function main() {
     },
   });
 
+  // Departemen
+  const departemen = await prisma.departemen.create({
+    data: {
+      id: 1,
+      nama: "Teknik Informatika dan Komputer",
+      kadep_id: kadep.id,
+    },
+  });
+
+  // Prodi
+  const prodi = await prisma.prodi.create({
+    data: {
+      id: 1,
+      nama: "D4 Teknik Informatika",
+      departemen_id: departemen.id,
+      kaprodi_id: kaprodi.id,
+    },
+  });
+
+  // Kelas
+  const kelas = await prisma.kelas.create({
+    data: {
+      id: 1,
+      nama: "TI-4A",
+      angkatan: 2022,
+      prodi_id: prodi.id,
+      dosen_wali_id: dosenWali.id,
+    },
+  });
+
   // ===== MAHASISWA =====
   const dataMahasiswa = [
     { id: "2042231001", nama: "Ian Ale" },
@@ -74,7 +111,7 @@ async function main() {
         id: mhs.id,
         nama: mhs.nama,
         angkatan: 2022,
-        kelas_id: 1,
+        kelas_id: kelas.id,
       },
     });
   }
@@ -85,6 +122,11 @@ async function main() {
     kaprodi: kaprodi.email,
     dosenWali: dosenWali.email,
     waliMurid: waliMurid.email,
+  });
+  console.log({
+    departemen: departemen.nama,
+    prodi: prodi.nama,
+    kelas: kelas.nama,
   });
   console.log(`Mahasiswa: ${dataMahasiswa.length} data berhasil di-seed`);
 }
