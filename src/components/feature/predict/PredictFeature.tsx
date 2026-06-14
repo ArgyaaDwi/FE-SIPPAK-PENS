@@ -1,5 +1,5 @@
 "use client";
-import { Upload, FileText, X, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Upload, FileText, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Select from "react-select";
@@ -23,6 +23,296 @@ type AkademikStats = {
   mean: number;
   std: number;
   trend: number;
+};
+
+const PREDICTION_PAYLOAD_KEYS = [
+  "ips_mean_awal",
+  "ips_std_awal",
+  "ips_trend_awal",
+  "teori_mean_awal",
+  "teori_std_awal",
+  "teori_trend_awal",
+  "prak_mean_awal",
+  "prak_std_awal",
+  "prak_trend_awal",
+  "kehadiran_awal_mean",
+  "kehadiran_awal_std",
+  "kehadiran_trend_awal",
+  "sks_target_mean_awal",
+  "sks_target_std_awal",
+  "prop_mk_tidak_lulus_awal",
+  "prop_sks_tidak_lulus_awal",
+  "count_sem_mk_tidak_lulus_awal",
+  "ukt_awal_status",
+  "is_kipk",
+  "is_non_kipk",
+  "is_prestasi",
+  "total_prestasi",
+  "skor_total",
+  "is_STR",
+  "is_laki",
+  "PENGHASILAN_AYAH",
+  "PENGHASILAN_IBU",
+] as const;
+
+type PredictionPayloadKey = (typeof PREDICTION_PAYLOAD_KEYS)[number];
+type PredictionPayload = Record<PredictionPayloadKey, number>;
+type SpreadsheetRow = Record<string, unknown>;
+type SpreadsheetLookup = Record<string, unknown>;
+
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
+const SUPPORTED_FILE_EXTENSIONS = [".xlsx", ".xls", ".csv"];
+
+const normalizeColumnName = (value: unknown) =>
+  String(value)
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "")
+    .toLowerCase();
+
+const toPayloadNumber = (value: unknown) => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const rawValue = String(value ?? "").trim();
+  if (!rawValue) return 0;
+
+  const dotCount = (rawValue.match(/\./g) ?? []).length;
+  const normalizedValue =
+    rawValue.includes(",") && rawValue.includes(".")
+      ? rawValue.replace(/\./g, "").replace(",", ".")
+      : dotCount > 1
+        ? rawValue.replace(/\./g, "")
+        : rawValue.replace(",", ".");
+  const parsed = Number(normalizedValue.replace(/[^0-9.eE-]/g, ""));
+
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const roundNumber = (value: number, precision = 4) =>
+  Number(value.toFixed(precision));
+
+const buildRowLookup = (row: SpreadsheetRow) => {
+  return Object.entries(row).reduce<SpreadsheetLookup>((acc, [key, value]) => {
+    acc[normalizeColumnName(key)] = value;
+    return acc;
+  }, {});
+};
+
+const getLookupValue = (lookup: SpreadsheetLookup, aliases: string[]) => {
+  for (const alias of aliases) {
+    const normalizedAlias = normalizeColumnName(alias);
+    if (Object.prototype.hasOwnProperty.call(lookup, normalizedAlias)) {
+      return lookup[normalizedAlias];
+    }
+  }
+
+  return undefined;
+};
+
+const getLookupNumber = (lookup: SpreadsheetLookup, aliases: string[]) =>
+  toPayloadNumber(getLookupValue(lookup, aliases));
+
+const getLookupString = (lookup: SpreadsheetLookup, aliases: string[]) => {
+  const value = getLookupValue(lookup, aliases);
+  return value === undefined ? "" : String(value).trim();
+};
+
+const getSemesterAliases = (field: string, semester: number) => [
+  `${field}_${semester}`,
+  `${field}${semester}`,
+  `${field}_sem_${semester}`,
+  `${field}_sem${semester}`,
+  `${field}_smt_${semester}`,
+  `${field}_smt${semester}`,
+  `${field}_semester_${semester}`,
+  `${field}_semester${semester}`,
+  `sem_${semester}_${field}`,
+  `smt_${semester}_${field}`,
+  `semester_${semester}_${field}`,
+];
+
+const getSemesterValues = (lookup: SpreadsheetLookup, field: string) =>
+  [1, 2, 3, 4].map((semester) =>
+    getLookupNumber(lookup, getSemesterAliases(field, semester)),
+  );
+
+const hasAnyPayloadColumn = (lookup: SpreadsheetLookup) =>
+  PREDICTION_PAYLOAD_KEYS.some((key) =>
+    Object.prototype.hasOwnProperty.call(lookup, normalizeColumnName(key)),
+  );
+
+const hasAnySemesterColumn = (lookup: SpreadsheetLookup) => {
+  const rawFields = [
+    "ips",
+    "teori",
+    "prak",
+    "kehadiran",
+    "sks_target",
+    "mk_lulus",
+    "mk_tidak_lulus",
+    "sks_tidak_lulus",
+  ];
+
+  return rawFields.some((field) =>
+    [1, 2, 3, 4].some((semester) =>
+      getSemesterAliases(field, semester).some((alias) =>
+        Object.prototype.hasOwnProperty.call(lookup, normalizeColumnName(alias)),
+      ),
+    ),
+  );
+};
+
+const buildPayloadFromSpreadsheetRow = (row: SpreadsheetRow) => {
+  const lookup = buildRowLookup(row);
+
+  if (!hasAnyPayloadColumn(lookup) && !hasAnySemesterColumn(lookup)) {
+    throw new Error(
+      "Format file belum sesuai. Gunakan kolom payload seperti ips_mean_awal, atau kolom semester seperti ips_semester_1.",
+    );
+  }
+
+  const getDirectNumber = (key: PredictionPayloadKey, fallback: number) => {
+    const normalizedKey = normalizeColumnName(key);
+    return Object.prototype.hasOwnProperty.call(lookup, normalizedKey)
+      ? toPayloadNumber(lookup[normalizedKey])
+      : fallback;
+  };
+
+  const ipsValues = getSemesterValues(lookup, "ips");
+  const teoriValues = getSemesterValues(lookup, "teori");
+  const prakValues = getSemesterValues(lookup, "prak");
+  const kehadiranValues = getSemesterValues(lookup, "kehadiran");
+  const sksTargetValues = getSemesterValues(lookup, "sks_target");
+  const mkLulusValues = getSemesterValues(lookup, "mk_lulus");
+  const mkTidakLulusValues = getSemesterValues(lookup, "mk_tidak_lulus");
+  const sksTidakLulusValues = getSemesterValues(lookup, "sks_tidak_lulus");
+
+  const totalMkLulus = mkLulusValues.reduce((sum, value) => sum + value, 0);
+  const totalMkTidakLulus = mkTidakLulusValues.reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+  const totalSksTarget = sksTargetValues.reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+  const totalSksTidakLulus = sksTidakLulusValues.reduce(
+    (sum, value) => sum + value,
+    0,
+  );
+  const totalMk = totalMkLulus + totalMkTidakLulus;
+
+  const calculatedFromRow: PredictionPayload = {
+    ips_mean_awal: roundNumber(calculateMean(ipsValues)),
+    ips_std_awal: roundNumber(calculateStd(ipsValues)),
+    ips_trend_awal: roundNumber(calculateTrend(ipsValues)),
+    teori_mean_awal: roundNumber(calculateMean(teoriValues)),
+    teori_std_awal: roundNumber(calculateStd(teoriValues)),
+    teori_trend_awal: roundNumber(calculateTrend(teoriValues)),
+    prak_mean_awal: roundNumber(calculateMean(prakValues)),
+    prak_std_awal: roundNumber(calculateStd(prakValues)),
+    prak_trend_awal: roundNumber(calculateTrend(prakValues)),
+    kehadiran_awal_mean: roundNumber(calculateMean(kehadiranValues)),
+    kehadiran_awal_std: roundNumber(calculateStd(kehadiranValues)),
+    kehadiran_trend_awal: roundNumber(calculateTrend(kehadiranValues)),
+    sks_target_mean_awal: roundNumber(calculateMean(sksTargetValues), 2),
+    sks_target_std_awal: roundNumber(calculateStd(sksTargetValues), 2),
+    prop_mk_tidak_lulus_awal:
+      totalMk > 0 ? roundNumber(totalMkTidakLulus / totalMk) : 0,
+    prop_sks_tidak_lulus_awal:
+      totalSksTarget > 0
+        ? roundNumber(totalSksTidakLulus / totalSksTarget)
+        : 0,
+    count_sem_mk_tidak_lulus_awal: mkTidakLulusValues.filter(
+      (value) => value > 0,
+    ).length,
+    ukt_awal_status: getLookupNumber(lookup, [
+      "ukt_awal_status",
+      "status_ukt",
+      "ukt_status",
+    ]),
+    is_kipk: getLookupNumber(lookup, ["is_kipk", "kipk", "penerima_kipk"]),
+    is_non_kipk: getLookupNumber(lookup, ["is_non_kipk", "non_kipk"]),
+    is_prestasi: getLookupNumber(lookup, ["is_prestasi", "prestasi"]),
+    total_prestasi: getLookupNumber(lookup, [
+      "total_prestasi",
+      "jumlah_prestasi",
+    ]),
+    skor_total: getLookupNumber(lookup, ["skor_total", "skor_prestasi"]),
+    is_STR: getLookupNumber(lookup, ["is_STR", "is_str", "str"]),
+    is_laki: getLookupNumber(lookup, [
+      "is_laki",
+      "laki_laki",
+      "jenis_kelamin_laki",
+    ]),
+    PENGHASILAN_AYAH: getLookupNumber(lookup, [
+      "PENGHASILAN_AYAH",
+      "penghasilan_ayah",
+      "gaji_ayah",
+    ]),
+    PENGHASILAN_IBU: getLookupNumber(lookup, [
+      "PENGHASILAN_IBU",
+      "penghasilan_ibu",
+      "gaji_ibu",
+    ]),
+  };
+
+  const payload = PREDICTION_PAYLOAD_KEYS.reduce<PredictionPayload>(
+    (acc, key) => ({
+      ...acc,
+      [key]: getDirectNumber(key, calculatedFromRow[key]),
+    }),
+    {} as PredictionPayload,
+  );
+
+  return {
+    payload,
+    mahasiswaId: getLookupString(lookup, [
+      "mahasiswa_id",
+      "id_mahasiswa",
+      "nrp",
+      "nim",
+      "id",
+    ]),
+  };
+};
+
+const parsePredictionSpreadsheet = async (file: File) => {
+  const XLSX = await import("xlsx");
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+  const sheetName = workbook.SheetNames[0];
+
+  if (!sheetName) {
+    throw new Error("File tidak memiliki sheet data.");
+  }
+
+  const rows = XLSX.utils.sheet_to_json<SpreadsheetRow>(
+    workbook.Sheets[sheetName],
+    {
+      defval: "",
+      raw: true,
+    },
+  );
+  const firstDataRow = rows.find((row) =>
+    Object.values(row).some((value) => String(value).trim() !== ""),
+  );
+
+  if (!firstDataRow) {
+    throw new Error("File tidak memiliki baris data.");
+  }
+
+  return buildPayloadFromSpreadsheetRow(firstDataRow);
+};
+
+const isSupportedPredictionFile = (file: File) => {
+  const fileName = file.name.toLowerCase();
+  return SUPPORTED_FILE_EXTENSIONS.some((extension) =>
+    fileName.endsWith(extension),
+  );
 };
 
 export default function PredictFeature({
@@ -114,12 +404,7 @@ export default function PredictFeature({
     }));
   };
 
-  const buildFinalPayload = () => {
-    const toNumber = (value: unknown) => {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : 0;
-    };
-
+  const buildFinalPayload = (): PredictionPayload => {
     const ipsArr = akademikData.map((d) => d.ips);
     const teoriArr = akademikData.map((d) => d.teori);
     const prakArr = akademikData.map((d) => d.prak);
@@ -149,16 +434,16 @@ export default function PredictFeature({
       count_sem_mk_tidak_lulus_awal:
         calculatedLoad.count_sem_mk_tidak_lulus_awal,
 
-      ukt_awal_status: toNumber(formData.ukt_awal_status),
-      is_kipk: toNumber(formData.is_kipk),
-      is_non_kipk: toNumber(formData.is_non_kipk),
-      is_prestasi: toNumber(formData.is_prestasi),
-      total_prestasi: toNumber(formData.total_prestasi),
-      skor_total: toNumber(formData.skor_total),
-      is_STR: toNumber(formData.is_STR),
-      is_laki: toNumber(formData.is_laki),
-      PENGHASILAN_AYAH: toNumber(formData.PENGHASILAN_AYAH),
-      PENGHASILAN_IBU: toNumber(formData.PENGHASILAN_IBU),
+      ukt_awal_status: toPayloadNumber(formData.ukt_awal_status),
+      is_kipk: toPayloadNumber(formData.is_kipk),
+      is_non_kipk: toPayloadNumber(formData.is_non_kipk),
+      is_prestasi: toPayloadNumber(formData.is_prestasi),
+      total_prestasi: toPayloadNumber(formData.total_prestasi),
+      skor_total: toPayloadNumber(formData.skor_total),
+      is_STR: toPayloadNumber(formData.is_STR),
+      is_laki: toPayloadNumber(formData.is_laki),
+      PENGHASILAN_AYAH: toPayloadNumber(formData.PENGHASILAN_AYAH),
+      PENGHASILAN_IBU: toPayloadNumber(formData.PENGHASILAN_IBU),
     };
   };
 
@@ -194,9 +479,21 @@ export default function PredictFeature({
     }));
   };
 
-  const handleFileChange = (e: any) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      if (!isSupportedPredictionFile(selectedFile)) {
+        alert("Format file belum didukung. Gunakan file .xlsx, .xls, atau .csv.");
+        e.target.value = "";
+        return;
+      }
+
+      if (selectedFile.size > MAX_UPLOAD_SIZE) {
+        alert("Ukuran file maksimal 10MB.");
+        e.target.value = "";
+        return;
+      }
+
       setFile(selectedFile);
     }
   };
@@ -216,7 +513,19 @@ export default function PredictFeature({
     setIsDragging(false);
 
     const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type === "text/csv") {
+    if (!droppedFile) return;
+
+    if (!isSupportedPredictionFile(droppedFile)) {
+      alert("Format file belum didukung. Gunakan file .xlsx, .xls, atau .csv.");
+      return;
+    }
+
+    if (droppedFile.size > MAX_UPLOAD_SIZE) {
+      alert("Ukuran file maksimal 10MB.");
+      return;
+    }
+
+    if (droppedFile) {
       setFile(droppedFile);
     }
   };
@@ -324,67 +633,101 @@ export default function PredictFeature({
 
   // 🔹 FUNGSI SUBMIT PREDIKSI UTAMA
   // 🔹 FUNGSI SUBMIT PREDIKSI UTAMA
+  const submitPredictionPayload = async (
+    finalPayload: PredictionPayload,
+    targetMahasiswaId: string,
+  ) => {
+    if (!isDemo && !targetMahasiswaId) {
+      throw new Error(
+        "Pilih Mahasiswa terlebih dahulu atau isi kolom mahasiswa_id/nrp/nim di file Excel.",
+      );
+    }
+
+    // ==========================================
+    // 1. FETCH KE FASTAPI (ML MODEL)
+    // ==========================================
+    const fastApiRes = await fetch("http://43.157.228.152:8001/predict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(finalPayload),
+    });
+
+    if (!fastApiRes.ok)
+      throw new Error("Gagal mengambil prediksi dari server ML");
+
+    const mlResult = await fastApiRes.json();
+
+    // ==========================================
+    // 2. SIMPAN KE DATABASE (Hanya jika BUKAN Demo)
+    // ==========================================
+    if (!isDemo) {
+      const dbRes = await fetch("/api/v1/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mahasiswa_id: targetMahasiswaId,
+          payload_input: finalPayload,
+          output: mlResult.output,
+          prob_rendah: mlResult.prob_rendah,
+          prob_sedang: mlResult.prob_sedang,
+          prob_tinggi: mlResult.prob_tinggi,
+        }),
+      });
+
+      if (!dbRes.ok) throw new Error("Gagal menyimpan prediksi ke database");
+    }
+
+    // ==========================================
+    // 3. REDIRECT KE HALAMAN RESULT
+    // ==========================================
+    sessionStorage.setItem(
+      "predictionResult",
+      JSON.stringify({ payload: finalPayload, result: mlResult }),
+    );
+
+    const redirectUrl = isDemo
+      ? "/demo/result"
+      : `/${role.toLowerCase().replace("_", "-")}/predict/result`;
+
+    router.push(redirectUrl);
+  };
+
   const handleSubmitPrediction = async () => {
     try {
       setIsLoading(true);
-
-      if (!isDemo && !mahasiswaId) {
-        alert("Pilih Mahasiswa terlebih dahulu untuk menyimpan ke database!");
-        return;
-      }
-
-      const finalPayload = buildFinalPayload();
-
-      // ==========================================
-      // 1. FETCH KE FASTAPI (ML MODEL)
-      // ==========================================
-      const fastApiRes = await fetch("http://43.157.228.152:8001/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalPayload),
-      });
-
-      if (!fastApiRes.ok)
-        throw new Error("Gagal mengambil prediksi dari server ML");
-
-      const mlResult = await fastApiRes.json();
-
-      // ==========================================
-      // 2. SIMPAN KE DATABASE (Hanya jika BUKAN Demo)
-      // ==========================================
-      if (!isDemo) {
-        const dbRes = await fetch("/api/v1/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mahasiswa_id: mahasiswaId,
-            payload_input: finalPayload,
-            output: mlResult.output,
-            prob_rendah: mlResult.prob_rendah,
-            prob_sedang: mlResult.prob_sedang,
-            prob_tinggi: mlResult.prob_tinggi,
-          }),
-        });
-
-        if (!dbRes.ok) throw new Error("Gagal menyimpan prediksi ke database");
-      }
-
-      // ==========================================
-      // 3. REDIRECT KE HALAMAN RESULT
-      // ==========================================
-      sessionStorage.setItem(
-        "predictionResult",
-        JSON.stringify({ payload: finalPayload, result: mlResult }),
-      );
-
-      const redirectUrl = isDemo
-        ? "/demo/result"
-        : `/${role.toLowerCase().replace("_", "-")}/predict/result`;
-
-      router.push(redirectUrl);
+      await submitPredictionPayload(buildFinalPayload(), mahasiswaId);
     } catch (error) {
       console.error(error);
-      alert("Terjadi kesalahan saat memproses prediksi.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat memproses prediksi.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmitFilePrediction = async () => {
+    if (!file) {
+      alert("Pilih file Excel atau CSV terlebih dahulu.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      const parsedFile = await parsePredictionSpreadsheet(file);
+      const targetMahasiswaId = mahasiswaId || parsedFile.mahasiswaId;
+
+      await submitPredictionPayload(parsedFile.payload, targetMahasiswaId);
+    } catch (error) {
+      console.error(error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat memproses file prediksi.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -461,7 +804,7 @@ export default function PredictFeature({
       )}
 
       <p className="text-gray-600 mb-4">
-        Masukkan data mahasiswa secara manual atau upload file .CSV
+        Masukkan data mahasiswa secara manual atau upload file Excel/CSV
       </p>
 
       {/* 🔹 Card Mode Input */}
@@ -484,9 +827,9 @@ export default function PredictFeature({
             mode === "csv" ? "border-primary bg-blue-50" : "border-gray-400"
           }`}
         >
-          <h4 className="font-semibold text-lg text-primary">Upload CSV</h4>
+          <h4 className="font-semibold text-lg text-primary">Upload Excel</h4>
           <p className="text-sm text-gray-500">
-            Upload data mahasiswa dalam format CSV
+            Upload data mahasiswa dalam format Excel atau CSV
           </p>
         </div>
       </div>
@@ -512,15 +855,16 @@ export default function PredictFeature({
                   Panduan Bantuan
                 </h3>
                 <p className="text-gray-600 text-sm md:text-base">
-                  Lihat panduan lengkap untuk format file CSV yang benar dan
-                  cara mengisi data dengan tepat agar prediksi akurat.
+                  File dapat berisi kolom payload final seperti ips_mean_awal,
+                  atau kolom data semester seperti ips_semester_1. Baris data
+                  pertama akan dipakai untuk prediksi.
                 </p>
               </div>
             </div>
           </div>
           <div className="bg-white rounded-lg mt-3 py-4 px-4 shadow-sm border border-dashed border-gray-300">
             <h3 className="text-black text-xl font-bold pb-4">
-              Upload File CSV
+              Upload File Excel/CSV
             </h3>
 
             <div
@@ -537,7 +881,7 @@ export default function PredictFeature({
               <input
                 type="file"
                 ref={fileInputRef}
-                accept=".csv"
+                accept=".xlsx,.xls,.csv"
                 className="hidden"
                 onChange={handleFileChange}
               />
@@ -573,10 +917,10 @@ export default function PredictFeature({
                     <span className="font-semibold text-blue-600">
                       Klik untuk memilih file
                     </span>{" "}
-                    atau drag & drop file CSV di sini
+                    atau drag & drop file Excel/CSV di sini
                   </p>
                   <p className="text-xs text-gray-400 mt-2">
-                    Hanya file CSV dengan ukuran maksimal 10MB
+                    Format .xlsx, .xls, atau .csv dengan ukuran maksimal 10MB
                   </p>
                 </>
               )}
@@ -584,7 +928,7 @@ export default function PredictFeature({
 
             {file && (
               <button
-                onClick={handleSubmitPrediction}
+                onClick={handleSubmitFilePrediction}
                 disabled={isLoading}
                 className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition"
               >

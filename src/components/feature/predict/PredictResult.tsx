@@ -181,6 +181,9 @@ export default function PredictResult({
                     <div className="text-xs sm:text-sm mt-1 text-black font-medium">
                       RENDAH
                     </div>
+                    <div className="text-[11px] sm:text-xs mt-1 text-gray-600">
+                      IPK &lt; 2.75
+                    </div>
                   </div>
                   <div className="text-center p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <div className="text-lg sm:text-2xl font-semibold text-yellow-600">
@@ -193,6 +196,9 @@ export default function PredictResult({
                     <div className="text-xs sm:text-sm mt-1 text-black font-medium">
                       SEDANG
                     </div>
+                    <div className="text-[11px] sm:text-xs mt-1 text-gray-600">
+                      IPK 2.75 - 3.50
+                    </div>
                   </div>
                   <div className="text-center p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div className="text-lg sm:text-2xl font-semibold text-green-600">
@@ -204,6 +210,9 @@ export default function PredictResult({
                     </div>
                     <div className="text-xs sm:text-sm mt-1 text-black font-medium">
                       TINGGI
+                    </div>
+                    <div className="text-[11px] sm:text-xs mt-1 text-gray-600">
+                      IPK &gt; 3.50
                     </div>
                   </div>
                 </div>

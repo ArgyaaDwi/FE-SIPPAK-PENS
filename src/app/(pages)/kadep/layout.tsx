@@ -47,29 +47,29 @@ export default function KadepLayout({ children }: KadepLayoutProps) {
         <SidebarItem
           icon={<GraduationCap size={20} />}
           text="Program Studi"
-          url="/admin/major"
+          url="/kadep/major"
         />
         <SidebarItem
           icon={<ChartLine size={20} />}
           text="Input Prediksi"
-          url="/admin/lecturer"
+          url="/kadep/predict/create"
         />
 
         <SidebarItem
           icon={<Files size={20} />}
           text="Hasil Prediksi"
-          url="/admin/proposal"
+          url="/kadep/predict/results"
         />
         <p className="pl-1 text-gray-400 text-xs font-thin">Setting</p>
         <SidebarItem
           icon={<CircleUserRound size={20} />}
           text="Profil Saya"
-          url="/admin/profile"
+          url="/kadep/profile"
         />
         <SidebarItem
           icon={<KeyRound size={20} />}
           text="Ganti Password"
-          url="/admin/profile/change-password"
+          url="/kadep/profile/change-password"
         />
       </Sidebar>
 
