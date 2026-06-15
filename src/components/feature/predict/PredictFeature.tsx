@@ -646,14 +646,20 @@ export default function PredictFeature({
     // ==========================================
     // 1. FETCH KE FASTAPI (ML MODEL)
     // ==========================================
-    const fastApiRes = await fetch("http://43.157.228.152:8001/predict", {
+    const fastApiRes = await fetch("/api/predict", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(finalPayload),
     });
 
-    if (!fastApiRes.ok)
-      throw new Error("Gagal mengambil prediksi dari server ML");
+    if (!fastApiRes.ok) {
+      const errorData = await fastApiRes.json().catch(() => null);
+      throw new Error(
+        errorData?.detail ??
+          errorData?.message ??
+          "Gagal mengambil prediksi dari server ML",
+      );
+    }
 
     const mlResult = await fastApiRes.json();
 
