@@ -114,10 +114,11 @@
 
 // export default Header;
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ModalUser from "../fragment/ModalUser";
 import Image from "next/image";
 import { Menu } from "lucide-react";
+import { formatRoleLabel } from "@/lib/utils";
 
 interface UserType {
   id: string;
@@ -134,9 +135,7 @@ interface HeaderProps {
 
 const Header = ({ user, onMenuClick }: HeaderProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentDate, setCurrentDate] = useState<string>("");
-
-  useEffect(() => {
+  const [currentDate] = useState(() => {
     const now = new Date();
     const options: Intl.DateTimeFormatOptions = {
       weekday: "long",
@@ -145,8 +144,8 @@ const Header = ({ user, onMenuClick }: HeaderProps) => {
       day: "numeric",
       timeZone: "Asia/Jakarta",
     };
-    setCurrentDate(now.toLocaleDateString("id-ID", options));
-  }, []);
+    return now.toLocaleDateString("id-ID", options);
+  });
 
   const handleAvatarClick = () => {
     setIsModalOpen((prev) => !prev);
@@ -172,7 +171,7 @@ const Header = ({ user, onMenuClick }: HeaderProps) => {
         </div>
         <div className="flex items-center gap-2 relative">
           <span className="hidden md:block text-gray-800 font-normal">
-            Argya Dwi
+            Memuat...
           </span>
           <div className="relative">
             <Image
@@ -188,10 +187,10 @@ const Header = ({ user, onMenuClick }: HeaderProps) => {
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 user={{
-                  name: "Argya Dwi",
-                  email: "argyadwi@pens.ac.id",
+                  name: "Memuat...",
+                  email: "",
                   avatarUrl: "/assets/images/user_img.png",
-                  role: "Admin",
+                  role: "Guest",
                 }}
               />
             )}
@@ -235,7 +234,7 @@ const Header = ({ user, onMenuClick }: HeaderProps) => {
                 name: user.name || "User Name",
                 email: user.email,
                 avatarUrl: user.avatarUrl || "/assets/images/user_img.png",
-                role: user.role,
+                role: formatRoleLabel(user.role),
               }}
             />
           )}

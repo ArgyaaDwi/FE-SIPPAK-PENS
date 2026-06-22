@@ -2,25 +2,124 @@ import Card from "@/components/fragment/Card";
 import CardChart from "@/components/fragment/CardChart";
 import BarChart from "@/components/chart/BarChart";
 import DoughnutChart from "@/components/chart/DoughnutChart";
-import { dummyKelas } from "@/data/dummy/dummyKelas";
 import Breadcrumb from "@/components/fragment/Breadcumb";
 import { Users, ThumbsUp, ThumbsDown, School } from "lucide-react";
 import LatestClasses from "../components/LatestClasses";
+import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import { normalizePredictionOutput } from "@/lib/utils";
+
 export default async function DashboardKaprodiPage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+  if (session.role !== "KAPRODI") {
+    redirect("/unauthorized");
+  }
   const breadcrumbItems = [
     {
       name: "Dashboard",
       url: "/dashboard",
     },
   ];
-  const barLabels = dummyKelas.map((item) => item.kelas);
-  const barData = dummyKelas.map((item) => item.jumlah);
+
+  const prodi = await prisma.prodi.findFirst({
+    where: {
+      kaprodi_id: Number(session.user_id),
+      deleted: false,
+    },
+    include: {
+      kelas: {
+        where: {
+          deleted: false,
+        },
+        orderBy: {
+          created_at: "desc",
+        },
+        include: {
+          mahasiswa: {
+            where: {
+              deleted: false,
+            },
+            include: {
+              prediksi: {
+                where: {
+                  deleted: false,
+                },
+                orderBy: {
+                  createdAt: "desc",
+                },
+                take: 1,
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const kelasList = prodi?.kelas ?? [];
+  const totalMahasiswa = kelasList.reduce(
+    (acc, kelas) => acc + kelas.mahasiswa.length,
+    0,
+  );
+  const totalKelas = kelasList.length;
+
+  const statusCounts = {
+    tinggi: 0,
+    sedang: 0,
+    rendah: 0,
+  };
+
+  const classStats = kelasList.map((kelas) => {
+    const stats = {
+      kelas: `${kelas.angkatan} ${kelas.nama}`,
+      tinggi: 0,
+      sedang: 0,
+      rendah: 0,
+    };
+
+    kelas.mahasiswa.forEach((mahasiswa) => {
+      const latestPrediction = mahasiswa.prediksi[0];
+
+      if (!latestPrediction) {
+        return;
+      }
+
+      const output = normalizePredictionOutput(latestPrediction.output);
+
+      if (output === "tinggi") {
+        statusCounts.tinggi += 1;
+        stats.tinggi += 1;
+      } else if (output === "sedang") {
+        statusCounts.sedang += 1;
+        stats.sedang += 1;
+      } else if (output === "rendah") {
+        statusCounts.rendah += 1;
+        stats.rendah += 1;
+      }
+    });
+
+    return stats;
+  });
+
+  const latestClasses = classStats.slice(0, 5);
+  const barLabels = classStats.map((item) => item.kelas);
+  const barData = kelasList.map((item) => item.mahasiswa.length);
   const doughnutLabels = [
     "Performa Tinggi",
     "Performa Sedang",
     "Performa Rendah",
   ];
-  const doughnutData = [128, 74, 32];
+  const doughnutData = [
+    statusCounts.tinggi,
+    statusCounts.sedang,
+    statusCounts.rendah,
+  ];
+
   return (
     <div>
       <Breadcrumb
@@ -35,30 +134,34 @@ export default async function DashboardKaprodiPage() {
         <Card
           icon={<Users color="gray" />}
           text="Total Mahasiswa"
-          count="712"
+          count={totalMahasiswa}
           color="#63C2EB"
-          url="/admin/lecturer"
+          url="/kaprodi/dashboard"
+          isDetail={false}
         />
         <Card
           icon={<School color="gray" />}
           text="Total Kelas Kuliah"
-          count="9"
+          count={totalKelas}
           color="#81C3C7"
-          url="/admin/publisher"
+          url="/kaprodi/dashboard"
+          isDetail={false}
         />
         <Card
           icon={<ThumbsUp color="gray" />}
           text="Total Performa Tinggi"
-          count="244"
+          count={statusCounts.tinggi}
           color="#7EF350"
-          url="/admin/proposal"
+          url="/kaprodi/dashboard"
+          isDetail={false}
         />
         <Card
           icon={<ThumbsDown color="gray" />}
           text="Total Performa Rendah"
-          count="19"
+          count={statusCounts.rendah}
           color="#f34842"
-          url="/admin/proposal"
+          url="/kaprodi/dashboard"
+          isDetail={false}
         />
       </div>
       <p className="text-black font-semibold mt-4">Grafik Visualisasi</p>
@@ -103,7 +206,7 @@ export default async function DashboardKaprodiPage() {
           title="Kelas Kuliah Terbaru"
           subtitle="Top 5  Kelas yang Baru Terdaftar"
         >
-          <LatestClasses />
+          <LatestClasses classes={latestClasses} />
         </CardChart>
       </div>
     </div>

@@ -2,6 +2,7 @@
 import { LogOut, X } from "lucide-react";
 import { createContext, useEffect } from "react";
 import Image from "next/image";
+import { formatRoleLabel } from "@/lib/utils";
 
 interface SidebarContextType {
   expanded: boolean;
@@ -102,8 +103,11 @@ export default function Sidebar({
             <div className="flex justify-between items-center w-full ml-3">
               <div className="leading-4">
                 <h4 className="font-normal text-black truncate max-w-[120px]">
-                  {user?.name || "Argya Dwi"}
+                  {user?.name || "Memuat..."}
                 </h4>
+                <p className="text-xs text-gray-500 truncate max-w-[120px] mt-1">
+                  {user?.role ? formatRoleLabel(user.role) : "Guest"}
+                </p>
               </div>
               <button onClick={handleLogout}>
                 <LogOut size={22} color="red" />

@@ -1,52 +1,16 @@
-"use client";
-
 type StudentStat = {
+  id: string;
   nama: string;
-  nrp: number;
-  jenis_kelamin: string;
-  current_ipk: number;
-  prediction_status: string;
+  kelas: string;
+  angkatan: number;
+  predictionStatus: string;
 };
 
-const dummyStudents: StudentStat[] = [
-  {
-    nama: "Argya Dwi Ferdinand Putra",
-    nrp: 3125640013,
-    jenis_kelamin: "Laki-laki",
-    current_ipk: 3.8,
-    prediction_status: "Tinggi",
-  },
-  {
-    nama: "Cut Ardelia Chiquita",
-    nrp: 3493640007,
-    jenis_kelamin: "Perempuan",
-    current_ipk: 3.7,
-    prediction_status: "Tinggi",
-  },
-  {
-    nama: "Saviq Isnu Balkhi",
-    nrp: 3122940001,
-    jenis_kelamin: "Laki-laki",
-    current_ipk: 3.5,
-    prediction_status: "Sedang",
-  },
-  {
-    nama: "Nadiva Imbi Maharani",
-    nrp: 3129640001,
-    jenis_kelamin: "Perempuan",
-    current_ipk: 3.5,
-    prediction_status: "Sedang",
-  },
-  {
-    nama: "Yudhistira Surya Ristyanto",
-    nrp: 3125640031,
-    jenis_kelamin: "Laki-laki",
-    current_ipk: 3.4,
-    prediction_status: "Sedang",
-  },
-];
+interface LatestStudentsProps {
+  students: StudentStat[];
+}
 
-export default function LatestStudents() {
+export default function LatestStudents({ students }: LatestStudentsProps) {
   return (
     <div className="overflow-x-auto border rounded-lg mt-1">
       <table className="min-w-full text-sm text-left text-gray-600">
@@ -55,25 +19,33 @@ export default function LatestStudents() {
             <th className="px-4 py-3">No.</th>
             <th className="px-4 py-3">Nama</th>
             <th className="px-4 py-3">NRP</th>
-            <th className="px-4 py-3">Jenis Kelamin</th>
-            <th className="px-4 py-3">IPS Saat Ini</th>
+            <th className="px-4 py-3">Kelas</th>
+            <th className="px-4 py-3">Angkatan</th>
             <th className="px-4 py-3">Status Prediksi</th>
           </tr>
         </thead>
 
         <tbody>
-          {dummyStudents.map((item, index) => (
-            <tr key={item.nrp} className=" hover:bg-gray-50">
-              <td className="px-4 py-2">{index + 1}</td>
-              <td className="px-4 py-2 font-medium text-gray-800">
-                {item.nama}
+          {students.length > 0 ? (
+            students.map((item, index) => (
+              <tr key={item.id} className="hover:bg-gray-50">
+                <td className="px-4 py-2">{index + 1}</td>
+                <td className="px-4 py-2 font-medium text-gray-800">
+                  {item.nama}
+                </td>
+                <td className="px-4 py-2">{item.id}</td>
+                <td className="px-4 py-2">{item.kelas}</td>
+                <td className="px-4 py-2">{item.angkatan}</td>
+                <td className="px-4 py-2">{item.predictionStatus}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                Belum ada data mahasiswa.
               </td>
-              <td className="px-4 py-2">{item.nrp}</td>
-              <td className="px-4 py-2">{item.jenis_kelamin}</td>
-              <td className="px-4 py-2">{item.current_ipk}</td>
-              <td className="px-4 py-2">{item.prediction_status}</td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>

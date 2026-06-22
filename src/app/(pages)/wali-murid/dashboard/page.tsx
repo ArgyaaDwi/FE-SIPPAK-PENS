@@ -1,35 +1,98 @@
 import Card from "@/components/fragment/Card";
 import CardChart from "@/components/fragment/CardChart";
-import BarChart from "@/components/chart/BarChart";
-import DoughnutChart from "@/components/chart/DoughnutChart";
-import { dummyKelas } from "@/data/dummy/dummyKelas";
 import Breadcrumb from "@/components/fragment/Breadcumb";
+import { GraduationCap, School, Users } from "lucide-react";
+import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
 import {
-  Users,
-  ThumbsUp,
-  ThumbsDown,
-  School,
-  ChartNoAxesColumn,
-  ChartNoAxesCombined,
-  GraduationCap,
-} from "lucide-react";
-import IPKProgressList from "../components/IPTrend";
-// import LatestClasses from "../components/LatestClasses";
+  formatPredictionStatusLabel,
+  normalizePredictionOutput,
+} from "@/lib/utils";
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
 export default async function DashboardWaliMuridPage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  if (session.role !== "WALI_MURID") {
+    redirect("/unauthorized");
+  }
+
+  const children = await prisma.mahasiswa.findMany({
+    where: {
+      wali_id: Number(session.user_id),
+      deleted: false,
+    },
+    orderBy: {
+      nama: "asc",
+    },
+    include: {
+      kelas: {
+        include: {
+          prodi: {
+            select: {
+              nama: true,
+            },
+          },
+        },
+      },
+      prediksi: {
+        where: {
+          deleted: false,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+  });
+
   const breadcrumbItems = [
     {
       name: "Dashboard",
       url: "/dashboard",
     },
   ];
-  const barLabels = dummyKelas.map((item) => item.kelas);
-  const barData = dummyKelas.map((item) => item.jumlah);
-  const doughnutLabels = [
-    "Performa Tinggi",
-    "Performa Sedang",
-    "Performa Rendah",
-  ];
-  const doughnutData = [128, 74, 32];
+
+  const activeChild = children[0] ?? null;
+  const latestPrediction = activeChild?.prediksi[0] ?? null;
+  const latestStatus = latestPrediction
+    ? normalizePredictionOutput(latestPrediction.output)
+    : "unknown";
+  const totalPrediksi = children.reduce(
+    (total, child) => total + child.prediksi.length,
+    0,
+  );
+  const probabilityCards = latestPrediction
+    ? [
+        {
+          label: "Probabilitas Rendah",
+          value: `${Math.round(latestPrediction.prob_rendah * 100)}%`,
+        },
+        {
+          label: "Probabilitas Sedang",
+          value: `${Math.round(latestPrediction.prob_sedang * 100)}%`,
+        },
+        {
+          label: "Probabilitas Tinggi",
+          value: `${Math.round(latestPrediction.prob_tinggi * 100)}%`,
+        },
+      ]
+    : [];
+
   return (
     <div>
       <Breadcrumb
@@ -41,7 +104,7 @@ export default async function DashboardWaliMuridPage() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0 space-y-2">
             <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Zefanya Atthaya Ferdinand
+              {activeChild?.nama ?? "Belum ada data anak"}
             </h3>
             <div className="flex items-center gap-2 text-gray-600">
               <svg
@@ -58,7 +121,9 @@ export default async function DashboardWaliMuridPage() {
                 />
               </svg>
               <p className="text-sm md:text-base font-medium">
-                NRP. 9876543219
+                {activeChild
+                  ? `${activeChild.id} - ${activeChild.kelas.prodi.nama}, ${activeChild.kelas.angkatan} ${activeChild.kelas.nama}`
+                  : "Hubungkan data mahasiswa dengan akun wali murid"}
               </p>
             </div>
           </div>
@@ -66,7 +131,7 @@ export default async function DashboardWaliMuridPage() {
             <div className="relative">
               <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary flex items-center justify-center shadow-xl">
                 <span className="text-white font-extrabold text-xl md:text-2xl">
-                  ZA
+                  {activeChild ? getInitials(activeChild.nama) : "-"}
                 </span>
               </div>
             </div>
@@ -76,37 +141,55 @@ export default async function DashboardWaliMuridPage() {
       <p className="text-black mt-4 font-semibold">Overview</p>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
         <Card
-          icon={<ChartNoAxesCombined color="gray" />}
-          text="IPS Saat Ini"
-          count="3.9"
+          icon={<Users color="gray" />}
+          text="Total Anak"
+          count={children.length}
           color="#63C2EB"
           isDetail={false}
           url="/"
         />
         <Card
           icon={<School color="gray" />}
-          text="Semester Saat Ini"
-          count="5"
+          text="Total Prediksi"
+          count={totalPrediksi}
           color="#81C3C7"
           isDetail={false}
           url="/"
         />
         <Card
           icon={<GraduationCap color="gray" />}
-          text="Status Prediksi Performa IPK"
-          count="Tinggi"
+          text="Status Prediksi Terbaru"
+          count={formatPredictionStatusLabel(latestStatus)}
           color="#1448CD"
           isDetail={false}
           url="/"
         />
       </div>
-      <p className="text-black font-semibold mt-4">Tren Perkembangan IP</p>
+      <p className="text-black font-semibold mt-4">Detail Prediksi Terbaru</p>
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-4 mt-2">
         <CardChart
-          title="Perkembangan IP Semester"
-          subtitle="Perkembangan IP mahasiswa dari semester ke semester"
+          title="Probabilitas Prediksi"
+          subtitle="Probabilitas dari prediksi terakhir mahasiswa"
         >
-          <IPKProgressList />
+          {probabilityCards.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {probabilityCards.map((item) => (
+                <div
+                  key={item.label}
+                  className="border rounded-md p-4 bg-gray-50"
+                >
+                  <p className="text-sm text-gray-500">{item.label}</p>
+                  <p className="text-2xl font-semibold text-black mt-2">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">
+              Belum ada prediksi untuk mahasiswa ini.
+            </p>
+          )}
         </CardChart>
       </div>
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg mt-3 p-4 md:p-6 border-l-4 border-blue-500">

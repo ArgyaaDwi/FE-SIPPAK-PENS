@@ -1,5 +1,3 @@
-"use client";
-
 type MajorStat = {
   prodi: string;
   tinggi: number;
@@ -7,40 +5,11 @@ type MajorStat = {
   rendah: number;
 };
 
-const dummyMajors: MajorStat[] = [
-  {
-    prodi: "D3 Teknik Informatika",
-    tinggi: 42,
-    sedang: 61,
-    rendah: 29,
-  },
-  {
-    prodi: "D3 Teknik Elektronika",
-    tinggi: 31,
-    sedang: 45,
-    rendah: 18,
-  },
-  {
-    prodi: "D4 Teknik Informatika",
-    tinggi: 28,
-    sedang: 34,
-    rendah: 12,
-  },
-  {
-    prodi: "D4 Teknik Telekomunikasi",
-    tinggi: 36,
-    sedang: 41,
-    rendah: 9,
-  },
-  {
-    prodi: "D4 Teknik Komputer",
-    tinggi: 48,
-    sedang: 39,
-    rendah: 14,
-  },
-];
+interface LatestMajorsProps {
+  majors: MajorStat[];
+}
 
-export default function LatestMajors() {
+export default function LatestMajors({ majors }: LatestMajorsProps) {
   return (
     <div className="overflow-x-auto border rounded-lg mt-1">
       <table className="min-w-full text-sm text-left text-gray-600">
@@ -55,19 +24,27 @@ export default function LatestMajors() {
         </thead>
 
         <tbody>
-          {dummyMajors.map((item, index) => (
-            <tr key={item.prodi} className=" hover:bg-gray-50">
-              <td className="px-4 py-2">{index + 1}</td>
-              <td className="px-4 py-2 font-medium text-gray-800">
-                {item.prodi}
+          {majors.length > 0 ? (
+            majors.map((item, index) => (
+              <tr key={item.prodi} className="hover:bg-gray-50">
+                <td className="px-4 py-2">{index + 1}</td>
+                <td className="px-4 py-2 font-medium text-gray-800">
+                  {item.prodi}
+                </td>
+                <td className="px-4 py-2">{item.tinggi}</td>
+                <td className="px-4 py-2">{item.sedang}</td>
+                <td className="px-4 py-2">{item.rendah}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
+                Belum ada data program studi.
               </td>
-              <td className="px-4 py-2">{item.tinggi}</td>
-              <td className="px-4 py-2">{item.sedang}</td>
-              <td className="px-4 py-2">{item.rendah}</td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
   );
-}
+} 

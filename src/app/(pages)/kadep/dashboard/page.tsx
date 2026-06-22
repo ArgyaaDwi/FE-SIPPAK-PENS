@@ -2,25 +2,139 @@ import Card from "@/components/fragment/Card";
 import CardChart from "@/components/fragment/CardChart";
 import BarChart from "@/components/chart/BarChart";
 import DoughnutChart from "@/components/chart/DoughnutChart";
-import { dummyProdi } from "@/data/dummy/dummyProdi";
 import Breadcrumb from "@/components/fragment/Breadcumb";
 import { Users, GraduationCap, ThumbsUp, ThumbsDown } from "lucide-react";
 import LatestMajors from "../components/LatestMajors";
+import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import { normalizePredictionOutput } from "@/lib/utils";
+
 export default async function DashboardKadepPage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  if (session.role !== "KADEP") {
+    redirect("/unauthorized");
+  }
+
+  const departemen = await prisma.departemen.findFirst({
+    where: {
+      kadep_id: Number(session.user_id),
+      deleted: false,
+    },
+    include: {
+      prodi: {
+        where: {
+          deleted: false,
+        },
+        orderBy: {
+          created_at: "desc",
+        },
+        include: {
+          kelas: {
+            where: {
+              deleted: false,
+            },
+            include: {
+              mahasiswa: {
+                where: {
+                  deleted: false,
+                },
+                include: {
+                  prediksi: {
+                    where: {
+                      deleted: false,
+                    },
+                    orderBy: {
+                      createdAt: "desc",
+                    },
+                    take: 1,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
   const breadcrumbItems = [
     {
       name: "Dashboard",
       url: "/dashboard",
     },
   ];
-  const barLabels = dummyProdi.map((item) => item.prodi);
-  const barData = dummyProdi.map((item) => item.jumlah);
+
+  const prodiList = departemen?.prodi ?? [];
+  const totalMahasiswa = prodiList.reduce(
+    (acc, prodi) =>
+      acc +
+      prodi.kelas.reduce((kelasAcc, kelas) => kelasAcc + kelas.mahasiswa.length, 0),
+    0,
+  );
+  const totalProdi = prodiList.length;
+
+  const statusCounts = {
+    tinggi: 0,
+    sedang: 0,
+    rendah: 0,
+  };
+
+  const majorStats = prodiList.map((prodi) => {
+    const stats = {
+      prodi: prodi.nama,
+      tinggi: 0,
+      sedang: 0,
+      rendah: 0,
+    };
+
+    prodi.kelas.forEach((kelas) => {
+      kelas.mahasiswa.forEach((mahasiswa) => {
+        const latestPrediction = mahasiswa.prediksi[0];
+
+        if (!latestPrediction) {
+          return;
+        }
+
+        const output = normalizePredictionOutput(latestPrediction.output);
+
+        if (output === "tinggi") {
+          statusCounts.tinggi += 1;
+          stats.tinggi += 1;
+        } else if (output === "sedang") {
+          statusCounts.sedang += 1;
+          stats.sedang += 1;
+        } else if (output === "rendah") {
+          statusCounts.rendah += 1;
+          stats.rendah += 1;
+        }
+      });
+    });
+
+    return stats;
+  });
+
+  const latestMajors = majorStats.slice(0, 5);
+
+  const barLabels = prodiList.map((item) => item.nama);
+  const barData = prodiList.map((item) =>
+    item.kelas.reduce((acc, kelas) => acc + kelas.mahasiswa.length, 0),
+  );
   const doughnutLabels = [
     "Performa Tinggi",
     "Performa Sedang",
     "Performa Rendah",
   ];
-  const doughnutData = [128, 74, 32];
+  const doughnutData = [
+    statusCounts.tinggi,
+    statusCounts.sedang,
+    statusCounts.rendah,
+  ];
   return (
     <div>
       <Breadcrumb
@@ -35,30 +149,34 @@ export default async function DashboardKadepPage() {
         <Card
           icon={<Users color="gray" />}
           text="Total Mahasiswa"
-          count="1112"
+          count={totalMahasiswa}
           color="#63C2EB"
-          url="/admin/lecturer"
+          url="/kadep/dashboard"
+          isDetail={false}
         />
         <Card
           icon={<GraduationCap color="gray" />}
           text="Total Program Studi"
-          count="9"
+          count={totalProdi}
           color="#81C3C7"
-          url="/admin/publisher"
+          url="/kadep/dashboard"
+          isDetail={false}
         />
         <Card
           icon={<ThumbsUp color="gray" />}
           text="Total Performa Tinggi"
-          count="844"
+          count={statusCounts.tinggi}
           color="#7EF350"
-          url="/admin/proposal"
+          url="/kadep/dashboard"
+          isDetail={false}
         />
         <Card
           icon={<ThumbsDown color="gray" />}
           text="Total Performa Rendah"
-          count="90"
+          count={statusCounts.rendah}
           color="#f34842"
-          url="/admin/proposal"
+          url="/kadep/dashboard"
+          isDetail={false}
         />
       </div>
       <p className="text-black font-semibold mt-4">Grafik Visualisasi</p>
@@ -103,7 +221,7 @@ export default async function DashboardKadepPage() {
           title="Program Studi Terbaru"
           subtitle="Top 5 Program Studi yang Baru Terdaftar"
         >
-          <LatestMajors />
+          <LatestMajors majors={latestMajors} />
         </CardChart>
       </div>
     </div>

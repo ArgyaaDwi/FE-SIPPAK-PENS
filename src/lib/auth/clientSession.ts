@@ -2,7 +2,7 @@ import { SessionPayload } from "./encrypt";
 
 export async function getClientSession() {
   try {
-    const response = await fetch("/api/me", {
+    const response = await fetch("/api/v1/auth/me", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

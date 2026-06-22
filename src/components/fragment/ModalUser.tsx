@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+
 interface ModalUserProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,7 +30,7 @@ const ModalUser = ({ isOpen, onClose, user }: ModalUserProps) => {
   if (!isOpen) return null;
   return (
     <>
-      <div className="absolute top-16 right-4 bg-white shadow-lg rounded-lg  w-64 z-50">
+      <div className="fixed top-16 right-4 bg-white shadow-lg rounded-lg w-64 z-50">
         <div className="flex items-center gap-2 p-4">
           <Image
             src={user.avatarUrl || "/assets/images/user_img.png"}
@@ -68,7 +69,7 @@ const ModalUser = ({ isOpen, onClose, user }: ModalUserProps) => {
       </div>
 
       <div
-        className="fixed inset-0 bg-black bg-opacity-30 z-40"
+        className="fixed inset-0 bg-black/10 z-40"
         onClick={onClose}
       ></div>
     </>
