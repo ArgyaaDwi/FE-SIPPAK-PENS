@@ -7,10 +7,8 @@ import Footer from "@/components/core/Footer";
 import { getClientSession } from "@/lib/auth/clientSession";
 import {
   LayoutDashboard,
-  Files,
   ChartLine,
   CircleUserRound,
-  KeyRound,
   Users,
 } from "lucide-react";
 
@@ -87,14 +85,8 @@ export default function DosenWaliLayout({ children }: DosenWaliLayoutProps) {
         />
         <SidebarItem
           icon={<ChartLine size={20} />}
-          text="Input Prediksi"
+          text="Buat Prediksi"
           url="/dosen-wali/predict"
-        />
-
-        <SidebarItem
-          icon={<Files size={20} />}
-          text="Hasil Prediksi"
-          url="/dosen-wali/predict/result"
         />
         <p className="pl-1 text-gray-400 text-xs font-thin">Setting</p>
         <SidebarItem
@@ -102,13 +94,7 @@ export default function DosenWaliLayout({ children }: DosenWaliLayoutProps) {
           text="Profil Saya"
           url="/dosen-wali/profile"
         />
-        <SidebarItem
-          icon={<KeyRound size={20} />}
-          text="Ganti Password"
-          url="/dosen-wali/profile/change-password"
-        />
       </Sidebar>
-
       <div className="flex-1 flex flex-col h-screen md:ml-0">
         <Header user={user} onMenuClick={handleMenuClick} />
         <div className="flex-1 overflow-y-auto bg-backgroundDash p-4">

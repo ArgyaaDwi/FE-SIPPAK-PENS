@@ -11,6 +11,7 @@ import {
   ChartLine,
   CircleUserRound,
   KeyRound,
+  User,
 } from "lucide-react";
 
 interface WaliMuridLayoutProps {
@@ -80,20 +81,14 @@ export default function WaliMuridLayout({ children }: WaliMuridLayoutProps) {
         />
         <p className="pl-1 text-gray-400 text-xs font-thin">Kelola</p>
         <SidebarItem
-          icon={<ChartLine size={20} />}
+          icon={<User size={20} />}
           text="Data Anak"
           url="/wali-murid/mahasiswa"
         />
         <SidebarItem
           icon={<ChartLine size={20} />}
-          text="Input Prediksi"
+          text="Buat Prediksi"
           url="/wali-murid/predict/create"
-        />
-
-        <SidebarItem
-          icon={<Files size={20} />}
-          text="Hasil Prediksi"
-          url="/wali-murid/predict/result"
         />
         <p className="pl-1 text-gray-400 text-xs font-thin">Setting</p>
         <SidebarItem
@@ -101,13 +96,7 @@ export default function WaliMuridLayout({ children }: WaliMuridLayoutProps) {
           text="Profil Saya"
           url="/wali-murid/profile"
         />
-        <SidebarItem
-          icon={<KeyRound size={20} />}
-          text="Ganti Password"
-          url="/wali-murid/profile/change-password"
-        />
       </Sidebar>
-
       <div className="flex-1 flex flex-col h-screen md:ml-0">
         <Header user={user} onMenuClick={handleMenuClick} />
         <div className="flex-1 overflow-y-auto bg-backgroundDash p-4">

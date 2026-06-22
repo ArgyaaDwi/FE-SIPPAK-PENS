@@ -82,30 +82,19 @@ export default function KaprodiLayout({ children }: KaprodiLayoutProps) {
         <p className="pl-1 text-gray-400 text-xs font-thin">Kelola</p>
         <SidebarItem
           icon={<School size={20} />}
-          text="Kelas Kuliah"
+          text="Kelas Perkuliahan"
           url="/kaprodi/kelas"
         />
         <SidebarItem
           icon={<ChartLine size={20} />}
-          text="Input Prediksi"
+          text="Buat Prediksi"
           url="/kaprodi/predict/create"
-        />
-
-        <SidebarItem
-          icon={<Files size={20} />}
-          text="Hasil Prediksi"
-          url="/kaprodi/predict/result"
         />
         <p className="pl-1 text-gray-400 text-xs font-thin">Setting</p>
         <SidebarItem
           icon={<CircleUserRound size={20} />}
           text="Profil Saya"
           url="/kaprodi/profile"
-        />
-        <SidebarItem
-          icon={<KeyRound size={20} />}
-          text="Ganti Password"
-          url="/kaprodi/profile/change-password"
         />
       </Sidebar>
 

@@ -1,7 +1,7 @@
 import Card from "@/components/fragment/Card";
 import CardChart from "@/components/fragment/CardChart";
 import Breadcrumb from "@/components/fragment/Breadcumb";
-import { GraduationCap, School, Users } from "lucide-react";
+import { ChartLine, GraduationCap, School, Users } from "lucide-react";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
@@ -9,6 +9,7 @@ import {
   formatPredictionStatusLabel,
   normalizePredictionOutput,
 } from "@/lib/utils";
+import { Chart } from "chart.js";
 
 function getInitials(name: string) {
   return name
@@ -67,31 +68,38 @@ export default async function DashboardWaliMuridPage() {
     },
   ];
 
-  const activeChild = children[0] ?? null;
-  const latestPrediction = activeChild?.prediksi[0] ?? null;
-  const latestStatus = latestPrediction
-    ? normalizePredictionOutput(latestPrediction.output)
-    : "unknown";
+  const childSummaries = children.map((child) => {
+    const latestPrediction = child.prediksi[0] ?? null;
+    const latestStatus = latestPrediction
+      ? normalizePredictionOutput(latestPrediction.output)
+      : "unknown";
+
+    return {
+      id: child.id,
+      nama: child.nama,
+      kelas: `${child.kelas.prodi.nama}, ${child.kelas.angkatan} ${child.kelas.nama}`,
+      initials: getInitials(child.nama),
+      latestStatus,
+      latestPrediction,
+      totalPrediksi: child.prediksi.length,
+    };
+  });
   const totalPrediksi = children.reduce(
     (total, child) => total + child.prediksi.length,
     0,
   );
-  const probabilityCards = latestPrediction
-    ? [
-        {
-          label: "Probabilitas Rendah",
-          value: `${Math.round(latestPrediction.prob_rendah * 100)}%`,
-        },
-        {
-          label: "Probabilitas Sedang",
-          value: `${Math.round(latestPrediction.prob_sedang * 100)}%`,
-        },
-        {
-          label: "Probabilitas Tinggi",
-          value: `${Math.round(latestPrediction.prob_tinggi * 100)}%`,
-        },
-      ]
-    : [];
+  const statusCounts = childSummaries.reduce(
+    (acc, child) => {
+      acc[child.latestStatus] += 1;
+      return acc;
+    },
+    {
+      tinggi: 0,
+      sedang: 0,
+      rendah: 0,
+      unknown: 0,
+    },
+  );
 
   return (
     <div>
@@ -100,44 +108,54 @@ export default async function DashboardWaliMuridPage() {
         breadcrumbItems={breadcrumbItems}
       />
       <p className="text-gray-600">Monitoring performa akademik anak Anda</p>
-      <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-2xl mt-3 p-5 md:p-6 border border-blue-400 hover:border-blue-600 transition-all duration-300">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0 space-y-2">
-            <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              {activeChild?.nama ?? "Belum ada data anak"}
-            </h3>
-            <div className="flex items-center gap-2 text-gray-600">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"
-                />
-              </svg>
-              <p className="text-sm md:text-base font-medium">
-                {activeChild
-                  ? `${activeChild.id} - ${activeChild.kelas.prodi.nama}, ${activeChild.kelas.angkatan} ${activeChild.kelas.nama}`
-                  : "Hubungkan data mahasiswa dengan akun wali murid"}
-              </p>
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            <div className="relative">
-              <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary flex items-center justify-center shadow-xl">
-                <span className="text-white font-extrabold text-xl md:text-2xl">
-                  {activeChild ? getInitials(activeChild.nama) : "-"}
-                </span>
+      {childSummaries.length > 0 ? (
+        <div
+          className={
+            childSummaries.length === 1
+              ? "mt-3"
+              : "mt-3 flex overflow-x-auto pb-3 snap-x snap-mandatory scroll-smooth"
+          }
+        >
+          {childSummaries.map((child) => (
+            <div
+              key={child.id}
+              className={`bg-gradient-to-r from-slate-50 to-blue-50 rounded-2xl p-5 md:p-6 border border-blue-400 hover:border-blue-600 transition-all duration-300 ${
+                childSummaries.length === 1
+                  ? "w-full"
+                  : "w-full shrink-0 snap-start"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0 space-y-2">
+                  <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
+                    {child.nama}
+                  </h3>
+                  <p className="text-sm md:text-base font-medium text-gray-600">
+                    {child.id} - {child.kelas}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Status terakhir:{" "}
+                    <span className="font-semibold text-gray-800">
+                      {formatPredictionStatusLabel(child.latestStatus)}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary flex items-center justify-center shadow-xl">
+                    <span className="text-white font-extrabold text-xl md:text-2xl">
+                      {child.initials}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ))}
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-lg p-6 border text-gray-500 mt-3">
+          Belum ada data anak yang terhubung dengan akun wali murid ini.
+        </div>
+      )}
       <p className="text-black mt-4 font-semibold">Overview</p>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-2">
         <Card
@@ -149,7 +167,7 @@ export default async function DashboardWaliMuridPage() {
           url="/"
         />
         <Card
-          icon={<School color="gray" />}
+          icon={<ChartLine color="gray" />}
           text="Total Prediksi"
           count={totalPrediksi}
           color="#81C3C7"
@@ -158,8 +176,8 @@ export default async function DashboardWaliMuridPage() {
         />
         <Card
           icon={<GraduationCap color="gray" />}
-          text="Status Prediksi Terbaru"
-          count={formatPredictionStatusLabel(latestStatus)}
+          text="Anak Performa Tinggi"
+          count={statusCounts.tinggi}
           color="#1448CD"
           isDetail={false}
           url="/"
@@ -169,19 +187,57 @@ export default async function DashboardWaliMuridPage() {
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-4 mt-2">
         <CardChart
           title="Probabilitas Prediksi"
-          subtitle="Probabilitas dari prediksi terakhir mahasiswa"
+          subtitle="Probabilitas dari prediksi terakhir setiap anak"
         >
-          {probabilityCards.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {probabilityCards.map((item) => (
+          {childSummaries.length > 0 ? (
+            <div
+              className={
+                childSummaries.length === 1
+                  ? "w-full"
+                  : "flex overflow-x-auto snap-x snap-mandatory scroll-smooth"
+              }
+            >
+              {childSummaries.map((child) => (
                 <div
-                  key={item.label}
-                  className="border rounded-md p-4 bg-gray-50"
+                  key={child.id}
+                  className={`border rounded-md p-4 bg-gray-50 ${
+                    childSummaries.length === 1
+                      ? "w-full"
+                      : "w-full shrink-0 snap-start"
+                  }`}
                 >
-                  <p className="text-sm text-gray-500">{item.label}</p>
-                  <p className="text-2xl font-semibold text-black mt-2">
-                    {item.value}
+                  <p className="text-sm font-semibold text-gray-800">
+                    {child.nama}
                   </p>
+                  {child.latestPrediction ? (
+                    <div className="grid grid-cols-3 gap-2 mt-3 text-sm">
+                      <div>
+                        <p className="text-gray-500">Rendah</p>
+                        <p className="font-semibold text-black">
+                          {Math.round(child.latestPrediction.prob_rendah * 100)}
+                          %
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Sedang</p>
+                        <p className="font-semibold text-black">
+                          {Math.round(child.latestPrediction.prob_sedang * 100)}
+                          %
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Tinggi</p>
+                        <p className="font-semibold text-black">
+                          {Math.round(child.latestPrediction.prob_tinggi * 100)}
+                          %
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 mt-2">
+                      Belum ada prediksi.
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

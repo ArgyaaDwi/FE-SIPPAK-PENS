@@ -7,11 +7,10 @@ import Footer from "@/components/core/Footer";
 import { getClientSession } from "@/lib/auth/clientSession";
 import {
   LayoutDashboard,
-  Files,
   ChartLine,
   GraduationCap,
   CircleUserRound,
-  KeyRound,
+  School,
 } from "lucide-react";
 
 interface KadepLayoutProps {
@@ -86,26 +85,21 @@ export default function KadepLayout({ children }: KadepLayoutProps) {
           url="/kadep/major"
         />
         <SidebarItem
+          icon={<School size={20} />}
+          text="Kelas Perkuliahan"
+          url="/kadep/kelas"
+        />
+        <SidebarItem
           icon={<ChartLine size={20} />}
-          text="Input Prediksi"
+          text="Buat Prediksi"
           url="/kadep/predict/create"
         />
 
-        <SidebarItem
-          icon={<Files size={20} />}
-          text="Hasil Prediksi"
-          url="/kadep/predict/results"
-        />
         <p className="pl-1 text-gray-400 text-xs font-thin">Setting</p>
         <SidebarItem
           icon={<CircleUserRound size={20} />}
           text="Profil Saya"
           url="/kadep/profile"
-        />
-        <SidebarItem
-          icon={<KeyRound size={20} />}
-          text="Ganti Password"
-          url="/kadep/profile/change-password"
         />
       </Sidebar>
 
