@@ -339,8 +339,9 @@ export default function PredictFeature({
       async function fetchMahasiswa() {
         setIsLoadingMahasiswa(true);
         try {
-          // Sesuaikan endpoint ini dengan rute Hono-mu nanti
-          const res = await fetch("/api/v1/mahasiswa");
+          const res = await fetch("/api/v1/academic/mahasiswa", {
+            credentials: "include",
+          });
           const json = await res.json();
           if (json.success) {
             setListMahasiswa(json.data);
@@ -640,6 +641,15 @@ export default function PredictFeature({
     if (!isDemo && !targetMahasiswaId) {
       throw new Error(
         "Pilih Mahasiswa terlebih dahulu atau isi kolom mahasiswa_id/nrp/nim di file Excel.",
+      );
+    }
+
+    if (
+      !isDemo &&
+      !listMahasiswa.some((mahasiswa) => mahasiswa.id === targetMahasiswaId)
+    ) {
+      throw new Error(
+        "Mahasiswa tidak ditemukan dalam cakupan akses akun Anda.",
       );
     }
 

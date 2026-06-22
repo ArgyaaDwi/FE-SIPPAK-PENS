@@ -133,9 +133,9 @@ export default function PredictResult({
 
       {/* Main Result Card */}
       <div className="flex justify-center my-3 sm:my-4 px-0">
-        <Card className="w-full border-2 border-blue-500 bg-blue-50 shadow-sm">
+        <Card className="w-full border-2 border-gray-500 bg-gray-50 shadow-sm">
           <CardHeader className="text-center px-3 py-3 sm:px-6 sm:py-6">
-            <CardTitle className="text-base sm:text-xl md:text-2xl text-sky-700 font-bold wrap-break-word">
+            <CardTitle className="text-base sm:text-xl md:text-2xl text-gray-700 font-bold wrap-break-word">
               Kesimpulan Hasil Prediksi
             </CardTitle>
             <CardDescription className="text-base sm:text-lg text-gray-600 mt-1">
@@ -170,7 +170,7 @@ export default function PredictResult({
                   Detail Probabilitas Kategori
                 </CardDescription>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 w-full">
-                  <div className="text-center p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="text-center p-3 sm:p-4 bg-white border-2 border-red-500 rounded-lg">
                     <div className="text-lg sm:text-2xl font-semibold text-red-600">
                       {isLoadingPrediction
                         ? "..."
@@ -178,14 +178,14 @@ export default function PredictResult({
                             predictionResult?.probabilitas.rendah,
                           )}
                     </div>
-                    <div className="text-xs sm:text-sm mt-1 text-black font-medium">
+                    <div className="text-xs sm:text-sm mt-1 text-red-700 font-medium">
                       RENDAH
                     </div>
-                    <div className="text-[11px] sm:text-xs mt-1 text-gray-600">
+                    <div className="text-[11px] sm:text-xs mt-1 text-rose-700">
                       IPK &lt; 2.75
                     </div>
                   </div>
-                  <div className="text-center p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="text-center p-3 sm:p-4 bg-white border-2 border-yellow-400 rounded-lg">
                     <div className="text-lg sm:text-2xl font-semibold text-yellow-600">
                       {isLoadingPrediction
                         ? "..."
@@ -193,14 +193,14 @@ export default function PredictResult({
                             predictionResult?.probabilitas.sedang,
                           )}
                     </div>
-                    <div className="text-xs sm:text-sm mt-1 text-black font-medium">
+                    <div className="text-xs sm:text-sm mt-1 text-yellow-600 font-medium">
                       SEDANG
                     </div>
-                    <div className="text-[11px] sm:text-xs mt-1 text-gray-600">
+                    <div className="text-[11px] sm:text-xs mt-1 text-yellow-700">
                       IPK 2.75 - 3.50
                     </div>
                   </div>
-                  <div className="text-center p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="text-center p-3 sm:p-4 bg-white border-2 border-green-500 rounded-lg">
                     <div className="text-lg sm:text-2xl font-semibold text-green-600">
                       {isLoadingPrediction
                         ? "..."
@@ -208,10 +208,10 @@ export default function PredictResult({
                             predictionResult?.probabilitas.tinggi,
                           )}
                     </div>
-                    <div className="text-xs sm:text-sm mt-1 text-black font-medium">
+                    <div className="text-xs sm:text-sm mt-1 text-green-600 font-medium">
                       TINGGI
                     </div>
-                    <div className="text-[11px] sm:text-xs mt-1 text-gray-600">
+                    <div className="text-[11px] sm:text-xs mt-1 text-green-700">
                       IPK &gt; 3.50
                     </div>
                   </div>
@@ -224,7 +224,7 @@ export default function PredictResult({
 
       {/* Metrik Performa Card */}
       <div className="flex justify-center my-3 sm:my-4 px-0">
-        <Card className="w-full border-2 border-green-500 bg-green-50 shadow-sm">
+        <Card className="w-full border-2 border-sky-500 bg-sky-50 shadow-sm">
           <CardHeader className="px-3 sm:px-6">
             <CardTitle className="text-base sm:text-lg md:text-xl text-black">
               Metrik Performa Stacking Ensemble Model
@@ -237,26 +237,26 @@ export default function PredictResult({
             <div className="space-y-4 sm:space-y-6">
               <div className="flex flex-col items-center justify-center space-y-3">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 w-full">
-                  <div className="text-center p-2 sm:p-4 bg-green-100 border border-green-200 rounded-lg">
-                    <div className="text-base sm:text-2xl font-semibold text-green-800">
+                  <div className="text-center p-2 sm:p-4 bg-sky-100 border border-sky-200 rounded-lg">
+                    <div className="text-base sm:text-2xl font-semibold text-sky-800">
                       {stackingAccuracy}%
                     </div>
                     <div className="text-xs mt-1 text-black">Accuracy</div>
                   </div>
-                  <div className="text-center p-2 sm:p-4 bg-green-100 border border-green-200 rounded-lg">
-                    <div className="text-base sm:text-2xl font-semibold text-green-800">
+                  <div className="text-center p-2 sm:p-4 bg-sky-100 border border-sky-200 rounded-lg">
+                    <div className="text-base sm:text-2xl font-semibold text-sky-800">
                       {(stackingPrecision * 100).toFixed(1)}%
                     </div>
                     <div className="text-xs mt-1 text-black">Precision</div>
                   </div>
-                  <div className="text-center p-2 sm:p-4 bg-green-100 border border-green-200 rounded-lg">
-                    <div className="text-base sm:text-2xl font-semibold text-green-800">
+                  <div className="text-center p-2 sm:p-4 bg-sky-100 border border-sky-200 rounded-lg">
+                    <div className="text-base sm:text-2xl font-semibold text-sky-800">
                       {(stackingRecall * 100).toFixed(1)}%
                     </div>
                     <div className="text-xs mt-1 text-black">Recall</div>
                   </div>
-                  <div className="text-center p-2 sm:p-4 bg-green-100 border border-green-200 rounded-lg">
-                    <div className="text-base sm:text-2xl font-semibold text-green-800">
+                  <div className="text-center p-2 sm:p-4 bg-sky-100 border border-sky-200 rounded-lg">
+                    <div className="text-base sm:text-2xl font-semibold text-sky-800">
                       {(stackingF1 * 100).toFixed(1)}%
                     </div>
                     <div className="text-xs mt-1 text-black">F1-Score</div>
@@ -309,14 +309,14 @@ export default function PredictResult({
                     dataKey="precision"
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
-                    dot={{ r: 4 }}
+                    dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 0 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="recall"
                     stroke="hsl(var(--destructive))"
                     strokeWidth={2}
-                    dot={{ r: 4 }}
+                    dot={{ r: 4, fill: "hsl(var(--destructive))", strokeWidth: 0 }}
                   />
                 </LineChart>
               </ResponsiveContainer>

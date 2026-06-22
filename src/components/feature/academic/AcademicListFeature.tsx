@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
-  Search,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Search } from "lucide-react";
 import CardChart from "@/components/fragment/CardChart";
 import { formatPredictionStatusLabel } from "@/lib/utils";
 
@@ -104,17 +99,11 @@ function buildEndpoint({
   return `/api/v1/academic/mahasiswa${query}`;
 }
 
-function getDefaultTitle(kind: AcademicListKind) {
-  if (kind === "prodi") return "Daftar Program Studi";
-  if (kind === "kelas") return "Daftar Kelas";
-  return "Daftar Mahasiswa";
-}
-
-function getDefaultSubtitle(kind: AcademicListKind) {
-  if (kind === "prodi") return "Monitoring performa akademik per program studi";
-  if (kind === "kelas") return "Monitoring performa akademik per kelas";
-  return "Monitoring performa akademik per mahasiswa";
-}
+// function getDefaultSubtitle(kind: AcademicListKind) {
+//   if (kind === "prodi") return "Monitoring performa akademik per program studi";
+//   if (kind === "kelas") return "Monitoring performa akademik per kelas";
+//   return "Monitoring performa akademik per mahasiswa";
+// }
 
 function getDetailHref(
   item: AcademicItem,
@@ -173,7 +162,7 @@ function getSearchText(item: AcademicItem, kind: AcademicListKind) {
 }
 
 function getFilterPlaceholder(kind: AcademicListKind) {
-  if (kind === "prodi") return "Cari program studi atau departemen...";
+  if (kind === "prodi") return "Cari program studi ...";
   if (kind === "kelas") return "Cari kelas, angkatan, atau program studi...";
   return "Cari nama, NRP, kelas, atau status...";
 }
@@ -411,7 +400,9 @@ function MobileItemList({
               <span>{mahasiswa.kelas?.prodi?.nama ?? "-"}</span>
               <span>
                 Prediksi:{" "}
-                {formatPredictionStatusLabel(mahasiswa.latestPrediction?.status)}
+                {formatPredictionStatusLabel(
+                  mahasiswa.latestPrediction?.status,
+                )}
               </span>
             </div>
           </div>
@@ -508,25 +499,9 @@ export default function AcademicListFeature({
   };
 
   return (
-    <CardChart
-      title={title ?? getDefaultTitle(kind)}
-      subtitle={subtitle ?? getDefaultSubtitle(kind)}
-    >
+    <CardChart title={title} subtitle={subtitle}>
       <div className="space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
-          <div className="relative">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={getFilterPlaceholder(kind)}
-              className="w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 outline-none focus:border-blue-500"
-            />
-          </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-3">
           <label className="flex items-center gap-2 text-sm text-gray-600">
             Show
             <select
@@ -542,6 +517,18 @@ export default function AcademicListFeature({
             </select>
             data
           </label>
+          <div className="relative w-full max-w-lg ml-auto">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={getFilterPlaceholder(kind)}
+              className="w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-700 outline-none focus:border-blue-500"
+            />
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">

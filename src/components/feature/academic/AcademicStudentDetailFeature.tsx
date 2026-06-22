@@ -132,27 +132,27 @@ export default function AcademicStudentDetailFeature({
       >
         {student.latestPrediction ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-            <div className="border rounded-md p-4 bg-gray-50">
-              <p className="text-sm text-gray-500">Status Terbaru</p>
-              <p className="text-xl font-semibold text-black mt-2">
+            <div className="border border-sky-200 rounded-md p-4 bg-sky-50">
+              <p className="text-sm text-sky-500">Status Terbaru</p>
+              <p className="text-xl font-semibold text-sky-700 mt-2">
                 {formatPredictionStatusLabel(student.latestPrediction.status)}
               </p>
             </div>
-            <div className="border rounded-md p-4 bg-gray-50">
-              <p className="text-sm text-gray-500">Rendah</p>
-              <p className="text-xl font-semibold text-black mt-2">
+            <div className="border border-red-200 rounded-md p-4 bg-red-50">
+              <p className="text-sm text-red-500">Rendah</p>
+              <p className="text-xl font-semibold text-red-700 mt-2">
                 {formatPercent(student.latestPrediction.probability.rendah)}
               </p>
             </div>
-            <div className="border rounded-md p-4 bg-gray-50">
-              <p className="text-sm text-gray-500">Sedang</p>
-              <p className="text-xl font-semibold text-black mt-2">
+            <div className="border border-yellow-200 rounded-md p-4 bg-yellow-50">
+              <p className="text-sm text-yellow-500">Sedang</p>
+              <p className="text-xl font-semibold text-yellow-700 mt-2">
                 {formatPercent(student.latestPrediction.probability.sedang)}
               </p>
             </div>
-            <div className="border rounded-md p-4 bg-gray-50">
-              <p className="text-sm text-gray-500">Tinggi</p>
-              <p className="text-xl font-semibold text-black mt-2">
+            <div className="border border-green-200 rounded-md p-4 bg-green-50">
+              <p className="text-sm text-green-500">Tinggi</p>
+              <p className="text-xl font-semibold text-green-700 mt-2">
                 {formatPercent(student.latestPrediction.probability.tinggi)}
               </p>
             </div>
