@@ -122,6 +122,20 @@ function parseId(id: string) {
   return parsedId;
 }
 
+function parseAngkatan(angkatan?: string) {
+  if (!angkatan) {
+    return null;
+  }
+
+  const parsedAngkatan = Number(angkatan);
+
+  if (!Number.isInteger(parsedAngkatan) || parsedAngkatan <= 0) {
+    return null;
+  }
+
+  return parsedAngkatan;
+}
+
 function prodiAccessWhere(session: SessionContext) {
   if (session.role === "KADEP") {
     return {
@@ -774,6 +788,206 @@ academicRouter.get("/mahasiswa", async (c) => {
   } catch (error) {
     console.error("Academic All Mahasiswa List Error:", error);
     return c.json({ success: false, error: "Gagal memuat mahasiswa" }, 500);
+  }
+});
+
+academicRouter.get("/predictions", async (c) => {
+  try {
+    const auth = await requireSession(c);
+
+    if ("error" in auth) {
+      return c.json({ success: false, error: auth.error }, auth.status);
+    }
+
+    const angkatanParam = c.req.query("angkatan");
+    const angkatan = parseAngkatan(angkatanParam);
+
+    if (angkatanParam && !angkatan) {
+      return c.json({ success: false, error: "Angkatan tidak valid" }, 400);
+    }
+
+    const predictions = await prisma.prediksi.findMany({
+      where: {
+        deleted: false,
+        mahasiswa: {
+          ...(angkatan ? { angkatan } : {}),
+          ...mahasiswaAccessWhere(auth.session),
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        id: true,
+        output: true,
+        prob_rendah: true,
+        prob_sedang: true,
+        prob_tinggi: true,
+        createdAt: true,
+        mahasiswa: {
+          select: {
+            id: true,
+            nama: true,
+            angkatan: true,
+            kelas: {
+              select: {
+                id: true,
+                nama: true,
+                angkatan: true,
+                prodi: {
+                  select: {
+                    id: true,
+                    nama: true,
+                    departemen: {
+                      select: {
+                        id: true,
+                        nama: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        created_by_user: {
+          select: {
+            id: true,
+            nama: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const data = predictions.map((prediction) => ({
+      id: prediction.id,
+      output: prediction.output,
+      status: normalizePredictionOutput(prediction.output),
+      probability: {
+        rendah: prediction.prob_rendah,
+        sedang: prediction.prob_sedang,
+        tinggi: prediction.prob_tinggi,
+      },
+      createdAt: prediction.createdAt,
+      mahasiswa: prediction.mahasiswa,
+      createdBy: prediction.created_by_user,
+    }));
+
+    return c.json(
+      {
+        success: true,
+        filters: {
+          angkatan,
+        },
+        total: data.length,
+        data,
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("Academic Prediction List Error:", error);
+    return c.json({ success: false, error: "Gagal memuat prediksi" }, 500);
+  }
+});
+
+academicRouter.get("/prediksi", async (c) => {
+  try {
+    const auth = await requireSession(c);
+
+    if ("error" in auth) {
+      return c.json({ success: false, error: auth.error }, auth.status);
+    }
+
+    const angkatanParam = c.req.query("angkatan");
+    const angkatan = parseAngkatan(angkatanParam);
+
+    if (angkatanParam && !angkatan) {
+      return c.json({ success: false, error: "Angkatan tidak valid" }, 400);
+    }
+
+    const predictions = await prisma.prediksi.findMany({
+      where: {
+        deleted: false,
+        mahasiswa: {
+          ...(angkatan ? { angkatan } : {}),
+          ...mahasiswaAccessWhere(auth.session),
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        id: true,
+        output: true,
+        prob_rendah: true,
+        prob_sedang: true,
+        prob_tinggi: true,
+        createdAt: true,
+        mahasiswa: {
+          select: {
+            id: true,
+            nama: true,
+            angkatan: true,
+            kelas: {
+              select: {
+                id: true,
+                nama: true,
+                angkatan: true,
+                prodi: {
+                  select: {
+                    id: true,
+                    nama: true,
+                    departemen: {
+                      select: {
+                        id: true,
+                        nama: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        created_by_user: {
+          select: {
+            id: true,
+            nama: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const data = predictions.map((prediction) => ({
+      id: prediction.id,
+      output: prediction.output,
+      status: normalizePredictionOutput(prediction.output),
+      probability: {
+        rendah: prediction.prob_rendah,
+        sedang: prediction.prob_sedang,
+        tinggi: prediction.prob_tinggi,
+      },
+      createdAt: prediction.createdAt,
+      mahasiswa: prediction.mahasiswa,
+      createdBy: prediction.created_by_user,
+    }));
+
+    return c.json(
+      {
+        success: true,
+        filters: {
+          angkatan,
+        },
+        total: data.length,
+        data,
+      },
+      200,
+    );
+  } catch (error) {
+    console.error("Academic Prediksi List Error:", error);
+    return c.json({ success: false, error: "Gagal memuat prediksi" }, 500);
   }
 });
 

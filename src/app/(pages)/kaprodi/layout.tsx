@@ -90,12 +90,12 @@ export default function KaprodiLayout({ children }: KaprodiLayoutProps) {
           text="Buat Prediksi"
           url="/kaprodi/predict/create"
         />
-        <p className="pl-1 text-gray-400 text-xs font-thin">Setting</p>
+        {/* <p className="pl-1 text-gray-400 text-xs font-thin">Setting</p>
         <SidebarItem
           icon={<CircleUserRound size={20} />}
           text="Profil Saya"
           url="/kaprodi/profile"
-        />
+        /> */}
       </Sidebar>
 
       <div className="flex-1 flex flex-col h-screen md:ml-0">

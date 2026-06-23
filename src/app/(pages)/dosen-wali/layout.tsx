@@ -88,12 +88,12 @@ export default function DosenWaliLayout({ children }: DosenWaliLayoutProps) {
           text="Buat Prediksi"
           url="/dosen-wali/predict"
         />
-        <p className="pl-1 text-gray-400 text-xs font-thin">Setting</p>
+        {/* <p className="pl-1 text-gray-400 text-xs font-thin">Setting</p>
         <SidebarItem
           icon={<CircleUserRound size={20} />}
           text="Profil Saya"
           url="/dosen-wali/profile"
-        />
+        /> */}
       </Sidebar>
       <div className="flex-1 flex flex-col h-screen md:ml-0">
         <Header user={user} onMenuClick={handleMenuClick} />
