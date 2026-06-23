@@ -160,7 +160,10 @@ const hasAnySemesterColumn = (lookup: SpreadsheetLookup) => {
   return rawFields.some((field) =>
     [1, 2, 3, 4].some((semester) =>
       getSemesterAliases(field, semester).some((alias) =>
-        Object.prototype.hasOwnProperty.call(lookup, normalizeColumnName(alias)),
+        Object.prototype.hasOwnProperty.call(
+          lookup,
+          normalizeColumnName(alias),
+        ),
       ),
     ),
   );
@@ -196,10 +199,7 @@ const buildPayloadFromSpreadsheetRow = (row: SpreadsheetRow) => {
     (sum, value) => sum + value,
     0,
   );
-  const totalSksTarget = sksTargetValues.reduce(
-    (sum, value) => sum + value,
-    0,
-  );
+  const totalSksTarget = sksTargetValues.reduce((sum, value) => sum + value, 0);
   const totalSksTidakLulus = sksTidakLulusValues.reduce(
     (sum, value) => sum + value,
     0,
@@ -224,9 +224,7 @@ const buildPayloadFromSpreadsheetRow = (row: SpreadsheetRow) => {
     prop_mk_tidak_lulus_awal:
       totalMk > 0 ? roundNumber(totalMkTidakLulus / totalMk) : 0,
     prop_sks_tidak_lulus_awal:
-      totalSksTarget > 0
-        ? roundNumber(totalSksTidakLulus / totalSksTarget)
-        : 0,
+      totalSksTarget > 0 ? roundNumber(totalSksTidakLulus / totalSksTarget) : 0,
     count_sem_mk_tidak_lulus_awal: mkTidakLulusValues.filter(
       (value) => value > 0,
     ).length,
@@ -484,7 +482,9 @@ export default function PredictFeature({
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       if (!isSupportedPredictionFile(selectedFile)) {
-        alert("Format file belum didukung. Gunakan file .xlsx, .xls, atau .csv.");
+        alert(
+          "Format file belum didukung. Gunakan file .xlsx, .xls, atau .csv.",
+        );
         e.target.value = "";
         return;
       }
@@ -876,6 +876,30 @@ export default function PredictFeature({
                   pertama akan dipakai untuk prediksi.
                 </p>
               </div>
+                <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
+                  <a
+                    href="https://docs.google.com/spreadsheets/d/154c88OmOaFSGbI9-KunNrfMXKnNBRaJx/edit?usp=sharing&ouid=113719287489667206648&rtpof=true&sd=true"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors duration-200 text-sm md:text-base"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                      ></path>
+                    </svg>
+                    Template Excel dan Panduan
+                  </a>
+                </div>
+              {/* </div> */}
             </div>
           </div>
           <div className="bg-white rounded-lg mt-3 py-4 px-4 shadow-sm border border-dashed border-gray-300">
