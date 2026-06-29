@@ -92,6 +92,8 @@ model Mahasiswa {
   id          String   @id
   nama        String
   angkatan    Int
+  actual_ipk  Float?
+  actual_category_ipk String?
 
   kelas_id     Int
   kelas       Kelas    @relation(fields: [kelas_id], references: [id])

@@ -1053,6 +1053,8 @@ academicRouter.get("/mahasiswa/:mahasiswaId", async (c) => {
           id: mahasiswa.id,
           nama: mahasiswa.nama,
           angkatan: mahasiswa.angkatan,
+          actualIpk: mahasiswa.actual_ipk,
+          actualCategoryIpk: mahasiswa.actual_category_ipk,
           kelas: mahasiswa.kelas,
           latestPrediction: mapLatestPrediction(mahasiswa),
           predictions: mahasiswa.prediksi.map((prediksi) => ({

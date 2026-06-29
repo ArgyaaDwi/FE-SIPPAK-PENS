@@ -61,6 +61,8 @@ export interface Mahasiswa {
   id: string;
   nama: string;
   angkatan: number;
+  actual_ipk?: number | null;
+  actual_category_ipk?: string | null;
   kelas_id: number;
   wali_id?: number | null;
   created_at: Date | string;

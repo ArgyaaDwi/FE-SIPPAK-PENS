@@ -21,6 +21,8 @@ type StudentDetail = {
   id: string;
   nama: string;
   angkatan: number;
+  actualIpk: number | null;
+  actualCategoryIpk: string | null;
   kelas: {
     id: number;
     nama: string;
@@ -162,6 +164,22 @@ export default function AcademicStudentDetailFeature({
             Belum ada prediksi untuk mahasiswa ini.
           </p>
         )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <div className="border border-slate-200 rounded-md p-4 bg-slate-50">
+            <p className="text-sm text-slate-500">IPK Aktual</p>
+            <p className="text-xl font-semibold text-slate-700 mt-2">
+              {typeof student.actualIpk === "number"
+                ? student.actualIpk.toFixed(2)
+                : "-"}
+            </p>
+          </div>
+          <div className="border border-indigo-200 rounded-md p-4 bg-indigo-50">
+            <p className="text-sm text-indigo-500">Kategori IPK Aktual</p>
+            <p className="text-xl font-semibold text-indigo-700 mt-2">
+              {student.actualCategoryIpk ?? "-"}
+            </p>
+          </div>
+        </div>
       </CardChart>
 
       <CardChart
@@ -175,6 +193,7 @@ export default function AcademicStudentDetailFeature({
                 <th className="px-4 py-3">No.</th>
                 <th className="px-4 py-3">Tanggal</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Aktual</th>
                 <th className="px-4 py-3">Rendah</th>
                 <th className="px-4 py-3">Sedang</th>
                 <th className="px-4 py-3">Tinggi</th>
@@ -192,6 +211,12 @@ export default function AcademicStudentDetailFeature({
                       {formatPredictionStatusLabel(prediction.status)}
                     </td>
                     <td className="px-4 py-2">
+                      {student.actualCategoryIpk ?? "-"}
+                      {typeof student.actualIpk === "number"
+                        ? ` (${student.actualIpk.toFixed(2)})`
+                        : ""}
+                    </td>
+                    <td className="px-4 py-2">
                       {formatPercent(prediction.probability.rendah)}
                     </td>
                     <td className="px-4 py-2">
@@ -205,7 +230,7 @@ export default function AcademicStudentDetailFeature({
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     Belum ada riwayat prediksi.
@@ -230,6 +255,12 @@ export default function AcademicStudentDetailFeature({
                     </p>
                     <p className="text-gray-500">
                       {formatDate(prediction.createdAt)}
+                    </p>
+                    <p className="text-gray-500">
+                      Aktual: {student.actualCategoryIpk ?? "-"}
+                      {typeof student.actualIpk === "number"
+                        ? ` (${student.actualIpk.toFixed(2)})`
+                        : ""}
                     </p>
                   </div>
                 </div>
