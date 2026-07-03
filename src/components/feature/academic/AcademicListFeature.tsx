@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, Search } from "lucide-react";
 import CardChart from "@/components/fragment/CardChart";
-import { formatPredictionStatusLabel } from "@/lib/utils";
+import {
+  formatActualCategoryIpkLabel,
+  formatPredictionStatusLabel,
+} from "@/lib/utils";
 
 type AcademicListKind = "prodi" | "kelas" | "mahasiswa";
 type StatusFilter = "all" | "tinggi" | "sedang" | "rendah" | "unknown";
@@ -44,6 +47,7 @@ type MahasiswaItem = {
   id: string;
   nama: string;
   angkatan: number;
+  actualCategoryIpk?: string | null;
   kelas?: {
     id: number;
     nama: string;
@@ -155,6 +159,7 @@ function getSearchText(item: AcademicItem, kind: AcademicListKind) {
     mahasiswa.kelas?.nama,
     mahasiswa.kelas?.angkatan,
     mahasiswa.kelas?.prodi?.nama,
+    mahasiswa.actualCategoryIpk,
     formatPredictionStatusLabel(mahasiswa.latestPrediction?.status),
   ]
     .filter(Boolean)
@@ -164,7 +169,7 @@ function getSearchText(item: AcademicItem, kind: AcademicListKind) {
 function getFilterPlaceholder(kind: AcademicListKind) {
   if (kind === "prodi") return "Cari program studi ...";
   if (kind === "kelas") return "Cari kelas, angkatan, atau program studi...";
-  return "Cari nama, NRP, kelas, atau status...";
+  return "Cari nama, NRP, kelas, kategori, atau status...";
 }
 
 function formatClassName(item: KelasItem | MahasiswaItem) {
@@ -271,7 +276,9 @@ function MahasiswaRows({
       <td className="px-4 py-2 font-medium text-gray-800">{item.nama}</td>
       <td className="px-4 py-2">{item.id}</td>
       <td className="px-4 py-2">{formatClassName(item)}</td>
-      <td className="px-4 py-2">{item.kelas?.prodi?.nama ?? "-"}</td>
+      <td className="px-4 py-2">
+        {formatActualCategoryIpkLabel(item.actualCategoryIpk)}
+      </td>
       <td className="px-4 py-2">
         {formatPredictionStatusLabel(item.latestPrediction?.status)}
       </td>
@@ -397,7 +404,10 @@ function MobileItemList({
               </Link>
             </div>
             <div className="mt-3 grid grid-cols-1 gap-1 text-sm text-gray-600">
-              <span>{mahasiswa.kelas?.prodi?.nama ?? "-"}</span>
+              <span>
+                Kategori Aktual:{" "}
+                {formatActualCategoryIpkLabel(mahasiswa.actualCategoryIpk)}
+              </span>
               <span>
                 Prediksi:{" "}
                 {formatPredictionStatusLabel(
@@ -588,7 +598,7 @@ export default function AcademicListFeature({
                   <th className="px-4 py-3">Nama</th>
                   <th className="px-4 py-3">NRP</th>
                   <th className="px-4 py-3">Kelas</th>
-                  <th className="px-4 py-3">Program Studi</th>
+                  <th className="px-4 py-3">Kategori Aktual</th>
                   <th className="px-4 py-3">Prediksi Terakhir</th>
                   <th className="px-4 py-3">Aksi</th>
                 </tr>

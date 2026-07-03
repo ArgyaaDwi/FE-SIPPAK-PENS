@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import CardChart from "@/components/fragment/CardChart";
-import { formatPredictionStatusLabel } from "@/lib/utils";
+import {
+  formatActualCategoryIpkLabel,
+  formatPredictionStatusLabel,
+} from "@/lib/utils";
 
 type PredictionDetail = {
   id: string;
@@ -176,7 +179,7 @@ export default function AcademicStudentDetailFeature({
           <div className="border border-indigo-200 rounded-md p-4 bg-indigo-50">
             <p className="text-sm text-indigo-500">Kategori IPK Aktual</p>
             <p className="text-xl font-semibold text-indigo-700 mt-2">
-              {student.actualCategoryIpk ?? "-"}
+              {formatActualCategoryIpkLabel(student.actualCategoryIpk)}
             </p>
           </div>
         </div>
@@ -211,10 +214,10 @@ export default function AcademicStudentDetailFeature({
                       {formatPredictionStatusLabel(prediction.status)}
                     </td>
                     <td className="px-4 py-2">
-                      {student.actualCategoryIpk ?? "-"}
-                      {typeof student.actualIpk === "number"
+                      {formatActualCategoryIpkLabel(student.actualCategoryIpk)}
+                      {/* {typeof student.actualIpk === "number"
                         ? ` (${student.actualIpk.toFixed(2)})`
-                        : ""}
+                        : ""} */}
                     </td>
                     <td className="px-4 py-2">
                       {formatPercent(prediction.probability.rendah)}
@@ -257,7 +260,8 @@ export default function AcademicStudentDetailFeature({
                       {formatDate(prediction.createdAt)}
                     </p>
                     <p className="text-gray-500">
-                      Aktual: {student.actualCategoryIpk ?? "-"}
+                      Aktual:{" "}
+                      {formatActualCategoryIpkLabel(student.actualCategoryIpk)}
                       {typeof student.actualIpk === "number"
                         ? ` (${student.actualIpk.toFixed(2)})`
                         : ""}

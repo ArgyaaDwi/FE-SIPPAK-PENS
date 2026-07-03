@@ -700,6 +700,7 @@ academicRouter.get("/kelas/:kelasId/mahasiswa", async (c) => {
         id: true,
         nama: true,
         angkatan: true,
+        actual_category_ipk: true,
         kelas: {
           select: {
             id: true,
@@ -721,6 +722,7 @@ academicRouter.get("/kelas/:kelasId/mahasiswa", async (c) => {
       id: item.id,
       nama: item.nama,
       angkatan: item.angkatan,
+      actualCategoryIpk: item.actual_category_ipk,
       kelas: item.kelas,
       latestPrediction: mapLatestPrediction(item),
     }));
@@ -759,6 +761,7 @@ academicRouter.get("/mahasiswa", async (c) => {
         id: true,
         nama: true,
         angkatan: true,
+        actual_category_ipk: true,
         kelas: {
           select: {
             id: true,
@@ -780,6 +783,7 @@ academicRouter.get("/mahasiswa", async (c) => {
       id: item.id,
       nama: item.nama,
       angkatan: item.angkatan,
+      actualCategoryIpk: item.actual_category_ipk,
       kelas: item.kelas,
       latestPrediction: mapLatestPrediction(item),
     }));

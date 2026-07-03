@@ -44,3 +44,13 @@ export function formatPredictionStatusLabel(status?: string | null) {
       return "Belum Ada";
   }
 }
+
+export function formatActualCategoryIpkLabel(category?: string | null) {
+  const normalized = category?.trim();
+
+  if (!normalized) {
+    return "-";
+  }
+
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+}
