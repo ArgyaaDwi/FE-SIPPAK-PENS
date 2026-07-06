@@ -10,6 +10,7 @@ const protectedRouteByRoles = [
 ];
 
 const publicRoutes = ["/login", "/api/v1/auth/login", "/api/v1/auth/logout"];
+const publicRoutePrefixes = ["/api/v1/docs"];
 
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
@@ -17,6 +18,7 @@ export async function middleware(req: NextRequest) {
 
   if (
     publicRoutes.includes(pathname) ||
+    publicRoutePrefixes.some((prefix) => pathname.startsWith(prefix)) ||
     pathname.startsWith("/demo") ||
     pathname.endsWith("/api/v1/predict/demo") ||
     pathname.startsWith("/_next/") ||
