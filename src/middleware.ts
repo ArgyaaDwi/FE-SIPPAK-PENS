@@ -9,7 +9,12 @@ const protectedRouteByRoles = [
   { path: /^\/wali-murid/, roles: ["wali_murid"] },
 ];
 
-const publicRoutes = ["/login", "/api/v1/auth/login", "/api/v1/auth/logout"];
+const publicRoutes = [
+  "/login",
+  "/api/predict",
+  "/api/v1/auth/login",
+  "/api/v1/auth/logout",
+];
 const publicRoutePrefixes = ["/api/v1/docs"];
 
 export async function middleware(req: NextRequest) {
