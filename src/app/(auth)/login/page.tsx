@@ -63,7 +63,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-white overflow-hidden">
       <div className="w-full md:w-1/2 flex flex-col justify-center p-12 bg-white-50 mx-4 md:mx-12 rounded-lg border border-gray-200 shadow-lg">
-        <Link
+        {/* <Link
           href="/publication"
           className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-4 transition-colors"
         >
@@ -81,7 +81,7 @@ export default function LoginPage() {
             />
           </svg>
           Landing Page
-        </Link>
+        </Link> */}
         <h1 className="text-black text-4xl mb-3 self-start font-semibold text-center md:text-left">
           Selamat Datang
         </h1>
